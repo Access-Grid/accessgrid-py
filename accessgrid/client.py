@@ -7,6 +7,12 @@ from datetime import datetime, timezone
 from urllib.parse import quote
 from typing import Optional, Dict, Any, List
 
+try:
+    from importlib.metadata import version
+    __version__ = version("accessgrid")
+except:
+    __version__ = "unknown"
+
 class AccessGridError(Exception):
     """Base exception for AccessGrid SDK"""
     pass
@@ -100,7 +106,7 @@ class Console:
         return self._client._get(f'/v1/console/card-templates/{template_id}/logs', params=kwargs)
 
 class AccessGrid:
-    def __init__(self, account_id: str, secret_key: str, base_url: str = 'https://api.accessgrid.com'):
+    def __init__(self, account_id: str, secret_key: str, base_url: str = 'http://localhost:3000'):
         if not account_id:
             raise ValueError("Account ID is required")
         if not secret_key:
@@ -134,7 +140,8 @@ class AccessGrid:
         headers = {
             'X-ACCT-ID': self.account_id,
             'X-PAYLOAD-SIG': self._generate_signature(payload),
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'User-Agent': f'accessgrid.py @ v{__version__}'
         }
 
         try:
