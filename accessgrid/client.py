@@ -106,7 +106,7 @@ class Console:
         return self._client._get(f'/v1/console/card-templates/{template_id}/logs', params=kwargs)
 
 class AccessGrid:
-    def __init__(self, account_id: str, secret_key: str, base_url: str = 'http://localhost:3000'):
+    def __init__(self, account_id: str, secret_key: str, base_url: str = 'https://api.accessgrid.com'):
         if not account_id:
             raise ValueError("Account ID is required")
         if not secret_key:
