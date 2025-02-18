@@ -1,22 +1,22 @@
 # AccessGrid SDK
 
-A JavaScript SDK for interacting with the [AccessGrid.com](https://www.accessgrid.com) API. This SDK provides a simple interface for managing NFC key cards and enterprise templates. Full docs at https://www.accessgrid.com/docs
+A Python SDK for interacting with the [AccessGrid.com](https://www.accessgrid.com) API. This SDK provides a simple interface for managing NFC key cards and enterprise templates. Full docs at https://www.accessgrid.com/docs
 
 ## Installation
 
 ```bash
-npm install accessgrid
+pip install accessgrid
 ```
 
 ## Quick Start
 
-```javascript
-import AccessGrid from 'accessgrid';
+```python
+from accessgrid import AccessGrid
 
-const accountId = process.env.ACCOUNT_ID;
-const secretKey = process.env.SECRET_KEY;
+account_id = os.environ.get('ACCOUNT_ID')
+secret_key = os.environ.get('SECRET_KEY')
 
-const client = new AccessGrid(accountId, secretKey);
+client = AccessGrid(account_id, secret_key)
 ```
 
 ## API Reference
@@ -25,134 +25,129 @@ const client = new AccessGrid(accountId, secretKey);
 
 #### Provision a new card
 
-```javascript
-const card = await client.accessCards.provision({
-  cardTemplateId: "0xd3adb00b5",
-  employeeId: "123456789",
-  tagId: "DDEADB33FB00B5",
-  allowOnMultipleDevices: true,
-  fullName: "Employee name",
-  email: "employee@yourwebsite.com",
-  phoneNumber: "+19547212241",
-  classification: "full_time",
-  startDate: "2025-01-31T22:46:25.601Z",
-  expirationDate: "2025-04-30T22:46:25.601Z",
-  employeePhoto: "[image_in_base64_encoded_format]"
-});
+```python
+card = client.access_cards.provision(
+    card_template_id="0xd3adb00b5",
+    employee_id="123456789",
+    tag_id="DDEADB33FB00B5",
+    allow_on_multiple_devices=True,
+    full_name="Employee name",
+    email="employee@yourwebsite.com",
+    phone_number="+19547212241",
+    classification="full_time",
+    start_date="2025-01-31T22:46:25.601Z",
+    expiration_date="2025-04-30T22:46:25.601Z",
+    employee_photo="[image_in_base64_encoded_format]"
+)
 ```
 
 #### Update a card
 
-```javascript
-const card = await client.accessCards.update({
-  cardId: "0xc4rd1d",
-  employeeId: "987654321",
-  fullName: "Updated Employee Name",
-  classification: "contractor",
-  expirationDate: "2025-02-22T21:04:03.664Z",
-  employeePhoto: "[image_in_base64_encoded_format]"
-});
+```python
+card = client.access_cards.update(
+    card_id="0xc4rd1d",
+    employee_id="987654321",
+    full_name="Updated Employee Name",
+    classification="contractor",
+    expiration_date="2025-02-22T21:04:03.664Z",
+    employee_photo="[image_in_base64_encoded_format]"
+)
 ```
 
 #### Manage card states
 
-```javascript
-// Suspend a card
-await client.accessCards.suspend({
-  cardId: "0xc4rd1d"
-});
+```python
+# Suspend a card
+client.access_cards.suspend(card_id="0xc4rd1d")
 
-// Resume a card
-await client.accessCards.resume({
-  cardId: "0xc4rd1d"
-});
+# Resume a card
+client.access_cards.resume(card_id="0xc4rd1d")
 
-// Unlink a card
-await client.accessCards.unlink({
-  cardId: "0xc4rd1d"
-});
+# Unlink a card
+client.access_cards.unlink(card_id="0xc4rd1d")
 ```
 
 ### Enterprise Console
 
 #### Create a template
 
-```javascript
-const template = await client.console.createTemplate({
-  name: "Employee NFC key",
-  platform: "apple",
-  useCase: "employee_badge",
-  protocol: "desfire",
-  allowOnMultipleDevices: true,
-  watchCount: 2,
-  iphoneCount: 3,
-  design: {
-    backgroundColor: "#FFFFFF",
-    labelColor: "#000000",
-    labelSecondaryColor: "#333333",
-    backgroundImage: "[image_in_base64_encoded_format]",
-    logoImage: "[image_in_base64_encoded_format]",
-    iconImage: "[image_in_base64_encoded_format]"
-  },
-  supportInfo: {
-    supportUrl: "https://help.yourcompany.com",
-    supportPhoneNumber: "+1-555-123-4567",
-    supportEmail: "support@yourcompany.com",
-    privacyPolicyUrl: "https://yourcompany.com/privacy",
-    termsAndConditionsUrl: "https://yourcompany.com/terms"
-  }
-});
+```python
+template = client.console.create_template(
+    name="Employee NFC key",
+    platform="apple",
+    use_case="employee_badge",
+    protocol="desfire",
+    allow_on_multiple_devices=True,
+    watch_count=2,
+    iphone_count=3,
+    design={
+        "background_color": "#FFFFFF",
+        "label_color": "#000000",
+        "label_secondary_color": "#333333",
+        "background_image": "[image_in_base64_encoded_format]",
+        "logo_image": "[image_in_base64_encoded_format]",
+        "icon_image": "[image_in_base64_encoded_format]"
+    },
+    support_info={
+        "support_url": "https://help.yourcompany.com",
+        "support_phone_number": "+1-555-123-4567",
+        "support_email": "support@yourcompany.com",
+        "privacy_policy_url": "https://yourcompany.com/privacy",
+        "terms_and_conditions_url": "https://yourcompany.com/terms"
+    }
+)
 ```
 
 #### Update a template
 
-```javascript
-const template = await client.console.updateTemplate({
-  cardTemplateId: "0xd3adb00b5",
-  name: "Updated Employee NFC key",
-  allowOnMultipleDevices: true,
-  watchCount: 2,
-  iphoneCount: 3,
-  supportInfo: {
-    supportUrl: "https://help.yourcompany.com",
-    supportPhoneNumber: "+1-555-123-4567",
-    supportEmail: "support@yourcompany.com",
-    privacyPolicyUrl: "https://yourcompany.com/privacy",
-    termsAndConditionsUrl: "https://yourcompany.com/terms"
-  }
-});
+```python
+template = client.console.update_template(
+    card_template_id="0xd3adb00b5",
+    name="Updated Employee NFC key",
+    allow_on_multiple_devices=True,
+    watch_count=2,
+    iphone_count=3,
+    support_info={
+        "support_url": "https://help.yourcompany.com",
+        "support_phone_number": "+1-555-123-4567",
+        "support_email": "support@yourcompany.com",
+        "privacy_policy_url": "https://yourcompany.com/privacy",
+        "terms_and_conditions_url": "https://yourcompany.com/terms"
+    }
+)
 ```
 
 #### Read a template
 
-```javascript
-const template = await client.console.readTemplate({
-  cardTemplateId: "0xd3adb00b5"
-});
+```python
+template = client.console.read_template(card_template_id="0xd3adb00b5")
 ```
 
 #### Get event logs
 
-```javascript
-const events = await client.console.eventLog({
-  cardTemplateId: "0xd3adb00b5",
-  filters: {
-    device: "mobile", // "mobile" or "watch"
-    startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    endDate: new Date().toISOString(),
-    eventType: "install"
-  }
-});
+```python
+from datetime import datetime, timedelta
+
+events = client.console.event_log(
+    card_template_id="0xd3adb00b5",
+    filters={
+        "device": "mobile",  # "mobile" or "watch"
+        "start_date": (datetime.now() - timedelta(days=30)).isoformat(),
+        "end_date": datetime.now().isoformat(),
+        "event_type": "install"
+    }
+)
 ```
 
 ## Configuration
 
 The SDK can be configured with custom options:
 
-```javascript
-const client = new AccessGrid(accountId, secretKey, {
-  baseUrl: 'https://api.staging.accessgrid.com' // Use a different API endpoint
-});
+```python
+client = AccessGrid(
+    account_id,
+    secret_key
+)
 ```
 
 ## Error Handling
@@ -165,24 +160,22 @@ The SDK throws errors for various scenarios including:
 
 Example error handling:
 
-```javascript
-try {
-  const card = await client.accessCards.provision({
-    // ... parameters
-  });
-} catch (error) {
-  console.error('Failed to provision card:', error.message);
-}
+```python
+try:
+    card = client.access_cards.provision(
+        # ... parameters
+    )
+except AccessGridError as error:
+    print(f'Failed to provision card: {str(error)}')
 ```
 
 ## Requirements
 
-- Node.js 12 or higher
-- Modern browser environment with support for:
-  - Fetch API
-  - Web Crypto API
-  - Promises
-  - async/await
+- Python 3.7 or higher
+- Required packages:
+  - requests
+  - cryptography
+  - python-dateutil
 
 ## Security
 
@@ -192,7 +185,7 @@ The SDK automatically handles:
 - Authentication headers
 - HTTPS communication
 
-Never expose your `secretKey` in client-side code. Always use environment variables or a secure configuration management system.
+Never expose your `secret_key` in source code. Always use environment variables or a secure configuration management system.
 
 ## License
 

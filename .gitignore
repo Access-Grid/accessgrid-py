@@ -21,6 +21,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+run.py
 
 # Coverage and test reports
 .coverage

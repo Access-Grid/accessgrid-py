@@ -45,44 +45,36 @@ class AccessCards:
     def __init__(self, client):
         self._client = client
 
-    def provision(self, card_template_id: str, **kwargs) -> AccessCard:
-        """Provision a new access card"""
-        payload = {
-            'card_template_id': card_template_id,
-            **kwargs
-        }
-        response = self._client._post('/api/v1/nfc_keys/issue', payload)
+    def issue(self, **kwargs) -> AccessCard:
+        """Issue a new access card"""
+        response = self._client._post('/v1/key-cards', kwargs)
         return AccessCard(self._client, response)
+        
+    def provision(self, **kwargs) -> AccessCard:
+        """Alias for issue() method to maintain backwards compatibility"""
+        return self.issue(**kwargs)
 
     def update(self, card_id: str, **kwargs) -> AccessCard:
         """Update an existing access card"""
-        payload = {
-            'card_id': card_id,
-            **kwargs
-        }
-        response = self._client._post('/api/v1/nfc_keys/update', payload)
+        response = self._client._put(f'/v1/key-cards/{card_id}', kwargs)
         return AccessCard(self._client, response)
 
-    def _manage(self, card_id: str, action: str) -> AccessCard:
-        """Internal method for card management actions"""
-        payload = {
-            'card_id': card_id,
-            'manage_action': action
-        }
-        response = self._client._post('/api/v1/nfc_keys/manage', payload)
+    def manage(self, card_id: str, action: str) -> AccessCard:
+        """Manage card state (suspend/resume/unlink)"""
+        response = self._client._post(f'/v1/key-cards/{card_id}/{action}', {})
         return AccessCard(self._client, response)
 
     def suspend(self, card_id: str) -> AccessCard:
         """Suspend an access card"""
-        return self._manage(card_id, 'suspend')
+        return self.manage(card_id, 'suspend')
 
     def resume(self, card_id: str) -> AccessCard:
         """Resume a suspended access card"""
-        return self._manage(card_id, 'resume')
+        return self.manage(card_id, 'resume')
 
     def unlink(self, card_id: str) -> AccessCard:
         """Unlink an access card"""
-        return self._manage(card_id, 'unlink')
+        return self.manage(card_id, 'unlink')
 
 class Console:
     def __init__(self, client):
@@ -90,30 +82,22 @@ class Console:
 
     def create_template(self, **kwargs) -> Template:
         """Create a new card template"""
-        response = self._client._post('/api/v1/enterprise/create_template', kwargs)
+        response = self._client._post('/v1/console/card-templates', kwargs)
         return Template(self._client, response)
 
-    def update_template(self, card_template_id: str, **kwargs) -> Template:
+    def update_template(self, template_id: str, **kwargs) -> Template:
         """Update an existing card template"""
-        response = self._client._post(f'/api/v1/enterprise/update_template/{card_template_id}', kwargs)
+        response = self._client._put(f'/v1/console/card-templates/{template_id}', kwargs)
         return Template(self._client, response)
 
-    def read_template(self, card_template_id: str) -> Template:
+    def read_template(self, template_id: str) -> Template:
         """Get details of a card template"""
-        response = self._client._get(f'/api/v1/enterprise/read_template/{card_template_id}')
+        response = self._client._get(f'/v1/console/card-templates/{template_id}')
         return Template(self._client, response)
 
-    def event_log(self, card_template_id: str, filters: Optional[Dict] = None, 
-                 page: int = 1, per_page: int = 50) -> Dict[str, Any]:
+    def get_logs(self, template_id: str, **kwargs) -> Dict[str, Any]:
         """Get event logs for a card template"""
-        params = {
-            'page': page,
-            'per_page': per_page
-        }
-        if filters:
-            params['filters'] = filters
-            
-        return self._client._get(f'/api/v1/enterprise/logs/{card_template_id}', params)
+        return self._client._get(f'/v1/console/card-templates/{template_id}/logs', params=kwargs)
 
 class AccessGrid:
     def __init__(self, account_id: str, secret_key: str, base_url: str = 'https://api.accessgrid.com'):
@@ -125,6 +109,8 @@ class AccessGrid:
         self.account_id = account_id
         self.secret_key = secret_key
         self.base_url = base_url.rstrip('/')
+        
+        # Initialize API clients
         self.access_cards = AccessCards(self)
         self.console = Console(self)
 
@@ -181,3 +167,11 @@ class AccessGrid:
     def _post(self, endpoint: str, data: Dict) -> Dict[str, Any]:
         """Make a POST request"""
         return self._make_request('POST', endpoint, data=data)
+
+    def _put(self, endpoint: str, data: Dict) -> Dict[str, Any]:
+        """Make a PUT request"""
+        return self._make_request('PUT', endpoint, data=data)
+
+    def _patch(self, endpoint: str, data: Dict) -> Dict[str, Any]:
+        """Make a PATCH request"""
+        return self._make_request('PATCH', endpoint, data=data)
