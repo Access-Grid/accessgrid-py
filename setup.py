@@ -6,13 +6,13 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="accessgrid",
-    version="0.1.0",
-    author="Your Name",
+    version="0.1.1",
+    author="Auston Bunsen",
     author_email="your.email@example.com",
     description="Python SDK for the AccessGrid API",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/accessgrid-python",
+    url="https://github.com/access-grid/accessgrid-py",
     packages=find_packages(),
     classifiers=[
         "Development Status :: 4 - Beta",
