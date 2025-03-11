@@ -82,6 +82,10 @@ class AccessCards:
         """Unlink an access card"""
         return self.manage(card_id, 'unlink')
 
+    def delete(self, card_id: str) -> AccessCard:
+        """Delete an access card"""
+        return self.manage(card_id, 'delete')
+
 class Console:
     def __init__(self, client):
         self._client = client
@@ -153,7 +157,7 @@ class AccessGrid:
             parts = endpoint.strip('/').split('/')
             if len(parts) >= 2:
                 # For actions like unlink/suspend/resume, get the card ID (second to last part)
-                if parts[-1] in ['suspend', 'resume', 'unlink']:
+                if parts[-1] in ['suspend', 'resume', 'unlink', 'delete']:
                     resource_id = parts[-2]
                 else:
                     # Otherwise, the ID is typically the last part of the path

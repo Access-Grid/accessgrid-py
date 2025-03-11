@@ -25,6 +25,9 @@ run.py
 update.py
 update_name.py
 revoke.py
+suspend.py
+resume.py
+delete.py
 
 # Coverage and test reports
 .coverage
