@@ -62,7 +62,7 @@ class AccessCards:
 
     def update(self, card_id: str, **kwargs) -> AccessCard:
         """Update an existing access card"""
-        response = self._client._put(f'/v1/key-cards/{card_id}', kwargs)
+        response = self._client._patch(f'/v1/key-cards/{card_id}', kwargs)
         return AccessCard(self._client, response)
 
     def manage(self, card_id: str, action: str) -> AccessCard:
@@ -121,13 +121,24 @@ class AccessGrid:
         self.console = Console(self)
 
     def _generate_signature(self, payload: str) -> str:
-        """Generate HMAC signature for the payload"""
-        encoded_payload = base64.b64encode(payload.encode()).decode()
-        return hmac.new(
+        """
+        Generate HMAC signature for the payload according to the shared secret scheme:
+        SHA256.update(shared_secret + base64.encode(payload)).hexdigest()
+        
+        For requests with no payload (like GET, or actions like suspend/unlink/resume), 
+        caller should provide a payload with {"id": "{resource_id}"}
+        """
+        # Base64 encode the payload
+        encoded_payload = base64.b64encode(payload.encode())
+        
+        # Create HMAC using the shared secret as the key and the base64 encoded payload as the message
+        signature = hmac.new(
             self.secret_key.encode(),
-            encoded_payload.encode(),
+            encoded_payload,
             hashlib.sha256
         ).hexdigest()
+        
+        return signature
 
     def _make_request(self, method: str, endpoint: str, 
                      data: Optional[Dict] = None, 
@@ -135,21 +146,66 @@ class AccessGrid:
         """Make an HTTP request to the API"""
         url = f"{self.base_url}{endpoint}"
         
-        # Prepare payload and signature
-        payload = json.dumps(data) if data else ""
+        # Extract resource ID from the endpoint if needed for signature
+        resource_id = None
+        if method == 'GET' or (method == 'POST' and (not data or data == {})):
+            # Extract the ID from the endpoint - patterns like /resource/{id} or /resource/{id}/action
+            parts = endpoint.strip('/').split('/')
+            if len(parts) >= 2:
+                # For actions like unlink/suspend/resume, get the card ID (second to last part)
+                if parts[-1] in ['suspend', 'resume', 'unlink']:
+                    resource_id = parts[-2]
+                else:
+                    # Otherwise, the ID is typically the last part of the path
+                    resource_id = parts[-1]
+        
+        # Special handling for requests with no payload:
+        # 1. POST requests with empty body (like unlink/suspend/resume)
+        # 2. GET requests
+        if (method == 'POST' and not data) or method == 'GET':
+            # For these requests, use {"id": "card_id"} as the payload for signature generation
+            if resource_id:
+                payload = json.dumps({"id": resource_id})
+            else:
+                payload = "{}"
+        else:
+            # For normal POST/PUT/PATCH with body, use the actual payload
+            payload = json.dumps(data) if data else ""
+        
+        # Generate signature - we don't need to pass resource_id separately since we've already
+        # incorporated it into the payload when needed
+        signature = self._generate_signature(payload)
+        
         headers = {
             'X-ACCT-ID': self.account_id,
-            'X-PAYLOAD-SIG': self._generate_signature(payload),
+            'X-PAYLOAD-SIG': signature,
             'Content-Type': 'application/json',
             'User-Agent': f'accessgrid.py @ v{__version__}'
         }
 
+        # For GET requests, we don't need to add sig_payload here anymore 
+        # as it's handled in the request section below
+
         try:
+            # For requests with empty bodies (GET or action endpoints like unlink/suspend/resume),
+            # we need to include the sig_payload parameter
+            if method == 'GET' or (method == 'POST' and not data):
+                if not params:
+                    params = {}
+                # Include the ID payload in the query params
+                if resource_id:
+                    # The server expects the raw JSON string, not URL-encoded
+                    params['sig_payload'] = json.dumps({"id": resource_id})
+            
+            # For POST/PUT/PATCH with empty body, don't include a JSON body
+            # as the server uses request.raw_post which would be empty
+            json_data = data if data and method != 'GET' else None
+            
             response = requests.request(
                 method=method,
                 url=url,
                 headers=headers,
-                json=data if data else None,
+                json=json_data,
                 params=params
             )
             

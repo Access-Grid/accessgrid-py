@@ -22,6 +22,9 @@ wheels/
 .installed.cfg
 *.egg
 run.py
+update.py
+update_name.py
+revoke.py
 
 # Coverage and test reports
 .coverage
