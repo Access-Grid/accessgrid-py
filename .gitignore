@@ -28,6 +28,7 @@ revoke.py
 suspend.py
 resume.py
 delete.py
+list.py
 
 # Coverage and test reports
 .coverage

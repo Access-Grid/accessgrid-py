@@ -29,7 +29,6 @@ client = AccessGrid(account_id, secret_key)
 card = client.access_cards.provision(
     card_template_id="0xd3adb00b5",
     employee_id="123456789",
-    tag_id="DDEADB33FB00B5",
     allow_on_multiple_devices=True,
     full_name="Employee name",
     email="employee@yourwebsite.com",
@@ -54,6 +53,18 @@ card = client.access_cards.update(
 )
 ```
 
+#### List NFC keys / Access passes
+
+```python
+# List all cards for a template
+cards = client.access_cards.list(template_id="0xd3adb00b5")
+for card in cards:
+    print(card)  # Outputs: AccessCard(name='Employee Name', id='0xc4rd1d', state='active')
+
+# Filter cards by state
+active_cards = client.access_cards.list(template_id="0xd3adb00b5", state="active")
+```
+
 #### Manage card states
 
 ```python
@@ -65,6 +76,9 @@ client.access_cards.resume(card_id="0xc4rd1d")
 
 # Unlink a card
 client.access_cards.unlink(card_id="0xc4rd1d")
+
+# Delete a card
+client.access_cards.delete(card_id="0xc4rd1d")
 ```
 
 ### Enterprise Console

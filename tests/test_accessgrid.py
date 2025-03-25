@@ -114,6 +114,46 @@ class TestAccessCards:
         client.access_cards.unlink(card_id)
         call_args = mock_request.call_args[1]
         assert call_args['json'] == {'card_id': card_id, 'manage_action': 'unlink'}
+    
+    @patch('requests.request')
+    def test_list_keys(self, mock_request, client, mock_response):
+        mock_response.json.return_value = {
+            'items': [
+                {
+                    'id': 'key1',
+                    'state': 'active',
+                    'full_name': 'John Doe',
+                    'install_url': 'https://example.com/install/key1',
+                    'expiration_date': '2025-12-31'
+                },
+                {
+                    'id': 'key2',
+                    'state': 'suspended',
+                    'full_name': 'Jane Smith',
+                    'install_url': 'https://example.com/install/key2',
+                    'expiration_date': '2025-12-31'
+                }
+            ]
+        }
+        mock_request.return_value = mock_response
+        template_id = '0xd3adb00b5'
+        
+        # Test list with template_id only
+        keys = client.access_cards.list(template_id=template_id)
+        assert len(keys) == 2
+        assert keys[0].id == 'key1'
+        assert keys[0].state == 'active'
+        assert keys[0].full_name == 'John Doe'
+        
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'GET'
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards"
+        assert call_args['params'] == {'template_id': template_id, 'sig_payload': '{}'}
+        
+        # Test list with template_id and state
+        keys = client.access_cards.list(template_id=template_id, state='active')
+        call_args = mock_request.call_args[1]
+        assert call_args['params'] == {'template_id': template_id, 'state': 'active', 'sig_payload': '{}'}
 
 class TestConsole:
     @pytest.fixture

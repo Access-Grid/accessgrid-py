@@ -29,6 +29,12 @@ class AccessCard:
         self.state = data.get('state')
         self.full_name = data.get('full_name')
         self.expiration_date = data.get('expiration_date')
+        
+    def __str__(self) -> str:
+        return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}')"
+    
+    def __repr__(self) -> str:
+        return self.__str__()
 
 class Template:
     def __init__(self, client, data: Dict[str, Any]):
@@ -64,6 +70,24 @@ class AccessCards:
         """Update an existing access card"""
         response = self._client._patch(f'/v1/key-cards/{card_id}', kwargs)
         return AccessCard(self._client, response)
+
+    def list(self, template_id: str, state: Optional[str] = None) -> List[AccessCard]:
+        """
+        List NFC keys provisioned for a particular card template.
+        
+        Args:
+            template_id: Required. The card template ID to list keys for
+            state: Filter keys by state (active, suspended, unlink, deleted)
+            
+        Returns:
+            List of AccessCard objects
+        """
+        params = {'template_id': template_id}
+        if state:
+            params['state'] = state
+            
+        response = self._client._get('/v1/key-cards', params=params)
+        return [AccessCard(self._client, item) for item in response.get('keys', [])]
 
     def manage(self, card_id: str, action: str) -> AccessCard:
         """Manage card state (suspend/resume/unlink)"""
