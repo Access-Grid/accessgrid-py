@@ -29,6 +29,17 @@ suspend.py
 resume.py
 delete.py
 list.py
+hotel.py
+pdq.py
+quicknode.py
+hotel.py
+omnitec.py
+kdf.py
+farpointe.py
+gps.csv
+guests.csv
+hf0.py
+spk.py
 
 # Coverage and test reports
 .coverage

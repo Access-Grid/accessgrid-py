@@ -29,6 +29,10 @@ class AccessCard:
         self.state = data.get('state')
         self.full_name = data.get('full_name')
         self.expiration_date = data.get('expiration_date')
+        self.card_number = data.get('card_number')
+        self.site_code = data.get('site_code')
+        self.file_data = data.get('file_data')
+        self.direct_install_url = data.get('direct_install_url')
         
     def __str__(self) -> str:
         return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}')"
@@ -157,7 +161,8 @@ class AccessGrid:
         caller should provide a payload with {"id": "{resource_id}"}
         """
         # Base64 encode the payload
-        encoded_payload = base64.b64encode(payload.encode())
+        payload_bytes = payload.encode()
+        encoded_payload = base64.b64encode(payload_bytes)
         
         # Create HMAC using the shared secret as the key and the base64 encoded payload as the message
         signature = hmac.new(
