@@ -162,6 +162,7 @@ class TestConsole:
             'platform': 'apple',
             'use_case': 'employee_badge',
             'protocol': 'desfire',
+            'allow_on_multiple_devices': True,
             'watch_count': 2,
             'iphone_count': 3,
             'design': {
