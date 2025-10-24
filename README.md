@@ -29,7 +29,6 @@ client = AccessGrid(account_id, secret_key)
 card = client.access_cards.provision(
     card_template_id="0xd3adb00b5",
     employee_id="123456789",
-    allow_on_multiple_devices=True,
     full_name="Employee name",
     email="employee@yourwebsite.com",
     phone_number="+19547212241",

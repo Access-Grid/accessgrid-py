@@ -38,7 +38,6 @@ class TestAccessCards:
             'card_template_id': '0xd3adb00b5',
             'employee_id': '123456789',
             'tag_id': 'DDEADB33FB00B5',
-            'allow_on_multiple_devices': True,
             'full_name': 'Employee name',
             'email': 'employee@yourwebsite.com',
             'phone_number': '+19547212241',
