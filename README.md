@@ -152,6 +152,46 @@ events = client.console.event_log(
 )
 ```
 
+### HID Organizations
+
+#### Create a HID organization
+
+```python
+org = client.console.hid.orgs.create(
+    name='My Organization',
+    full_address='1 Main St, NY NY',
+    phone='+1-555-0000',
+    first_name='Ada',
+    last_name='Lovelace'
+)
+
+print(f"Created org: {org.name} (ID: {org.id})")
+print(f"Slug: {org.slug}")
+```
+
+#### Complete HID org registration
+
+After creating an organization, complete the registration with credentials from your HID email:
+
+```python
+result = client.console.hid.orgs.activate(
+    email='admin@example.com',
+    password='hid-password-123'
+)
+
+print(f"Completed registration for org: {result.name}")
+print(f"Status: {result.status}")
+```
+
+#### List all HID organizations
+
+```python
+orgs = client.console.hid.orgs.list()
+
+for org in orgs:
+    print(f"Org ID: {org.id}, Name: {org.name}, Slug: {org.slug}")
+```
+
 ## Configuration
 
 The SDK can be configured with custom options:
