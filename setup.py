@@ -8,7 +8,7 @@ setup(
     name="accessgrid",
     version="0.1.8",
     author="Auston Bunsen",
-    author_email="your.email@example.com",
+    author_email="ab@accessgrid.com",
     description="Python SDK for the AccessGrid API",
     long_description=long_description,
     long_description_content_type="text/markdown",
