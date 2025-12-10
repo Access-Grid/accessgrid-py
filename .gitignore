@@ -46,6 +46,18 @@ spk.py
 omni-revoke.py
 lab.py
 local.py
+ayal.py
+badgepass-smarttap.py
+get.py
+kdf-read.py
+kdf2.py
+pdk.py
+port.py
+quicknode-lisbon.py
+sign.py
+sign.pyu
+stid.py
+stidkdf.py
 
 # Coverage and test reports
 .coverage
