@@ -27,7 +27,7 @@ from .client import (
 )
 
 # Version of the accessgrid package
-__version__ = "0.1.7"
+__version__ = "0.1.8"
 
 # List of public objects that will be exported with "from accessgrid import *"
 __all__ = [

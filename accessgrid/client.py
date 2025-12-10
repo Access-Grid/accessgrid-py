@@ -5,7 +5,7 @@ import json
 import requests
 from datetime import datetime, timezone
 from urllib.parse import quote
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 
 try:
     from importlib.metadata import version
@@ -141,9 +141,11 @@ class Console:
         response = self._client._put(f'/v1/console/card-templates/{template_id}', kwargs)
         return Template(self._client, response)
 
-    def read_template(self, template_id: str) -> Template:
-        """Get details of a card template"""
+    def read_template(self, template_id: str) -> Union[Template, List[Template]]:
+        "Read card template by id or list the card template pairs"
         response = self._client._get(f'/v1/console/card-templates/{template_id}')
+        if 'templates' in response:
+            return [Template(self._client, item) for item in response['templates']]
         return Template(self._client, response)
 
     def get_logs(self, template_id: str, **kwargs) -> Dict[str, Any]:
