@@ -23,13 +23,16 @@ wheels/
 *.egg
 run.py
 update.py
+members.csv
 update_name.py
 revoke.py
+osdp_probe.py
 suspend.py
 resume.py
 delete.py
 list.py
 hotel.py
+lab.py
 pdq.py
 quicknode.py
 hotel.py
@@ -40,6 +43,9 @@ gps.csv
 guests.csv
 hf0.py
 spk.py
+omni-revoke.py
+lab.py
+local.py
 
 # Coverage and test reports
 .coverage

@@ -26,16 +26,21 @@ class AccessCard:
         self._client = client
         self.id = data.get('id')
         self.url = data.get('install_url')
+        self.install_url = data.get('install_url')
+        self.details = data.get('details')
         self.state = data.get('state')
         self.full_name = data.get('full_name')
         self.expiration_date = data.get('expiration_date')
+        self.card_template_id = data.get('card_template_id')
         self.card_number = data.get('card_number')
         self.site_code = data.get('site_code')
         self.file_data = data.get('file_data')
         self.direct_install_url = data.get('direct_install_url')
+        self.devices = data.get('devices', [])
+        self.metadata = data.get('metadata', {})
         
     def __str__(self) -> str:
-        return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}')"
+        return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}', card_template_id='{self.card_template_id}')"
     
     def __repr__(self) -> str:
         return self.__str__()
@@ -70,23 +75,31 @@ class AccessCards:
         """Alias for issue() method to maintain backwards compatibility"""
         return self.issue(**kwargs)
 
+    def get(self, card_id: str) -> AccessCard:
+        """Get details about a specific issued Access Pass"""
+        response = self._client._get(f'/v1/key-cards/{card_id}')
+        return AccessCard(self._client, response)
+
     def update(self, card_id: str, **kwargs) -> AccessCard:
         """Update an existing access card"""
         response = self._client._patch(f'/v1/key-cards/{card_id}', kwargs)
         return AccessCard(self._client, response)
 
-    def list(self, template_id: str, state: Optional[str] = None) -> List[AccessCard]:
+    def list(self, template_id: Optional[str] = None, state: Optional[str] = None) -> List[AccessCard]:
         """
         List NFC keys provisioned for a particular card template.
         
         Args:
-            template_id: Required. The card template ID to list keys for
+            template_id: The card template ID to list keys for (optional)
             state: Filter keys by state (active, suspended, unlink, deleted)
             
         Returns:
             List of AccessCard objects
         """
-        params = {'template_id': template_id}
+        params = {}
+        if template_id:
+            params['template_id'] = template_id
+
         if state:
             params['state'] = state
             
@@ -249,6 +262,7 @@ class AccessGrid:
             elif response.status_code == 402:
                 raise AccessGridError("Insufficient account balance")
             elif not 200 <= response.status_code < 300:
+                print(f"response.status_code: {response.status_code}")
                 error_data = response.json() if response.text else {}
                 error_message = error_data.get('message', response.text)
                 raise AccessGridError(f"API request failed: {error_message}")
