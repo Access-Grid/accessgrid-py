@@ -62,6 +62,27 @@ class Template:
         self.terms_settings = data.get('terms_settings')
         self.style_settings = data.get('style_settings')
 
+class Org:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get('id')
+        self.name = data.get('name')
+        self.slug = data.get('slug')
+        self.status = data.get('status')
+        self.full_address = data.get('full_address')
+        self.phone = data.get('phone')
+        self.first_name = data.get('first_name')
+        self.last_name = data.get('last_name')
+        self.email = data.get('email')
+        self.created_at = data.get('created_at')
+        self.updated_at = data.get('updated_at')
+
+    def __str__(self) -> str:
+        return f"Org(name='{self.name}', id='{self.id}', slug='{self.slug}', status='{self.status}')"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 class AccessCards:
     def __init__(self, client):
         self._client = client
@@ -127,9 +148,72 @@ class AccessCards:
         """Delete an access card"""
         return self.manage(card_id, 'delete')
 
+class HIDOrgs:
+    def __init__(self, client):
+        self._client = client
+
+    def activate(self, email: str, password: str) -> Org:
+        """
+        Complete HID org registration with credentials from HID email.
+
+        Args:
+            email: Admin email address
+            password: Password from HID registration email
+
+        Returns:
+            Org object with registration details
+        """
+        data = {
+            'email': email,
+            'password': password
+        }
+        response = self._client._post('/v1/console/hid/orgs/activate', data)
+        return Org(self._client, response)
+
+    def list(self) -> List['Org']:
+        """
+        List all HID organizations.
+
+        Returns:
+            List of Org objects
+        """
+        response = self._client._get('/v1/console/hid/orgs')
+        return [Org(self._client, org) for org in response.get('orgs', [])]
+
+    def create(self, name: str, full_address: str, phone: str,
+               first_name: str, last_name: str) -> Org:
+        """
+        Create a new HID organization.
+
+        Args:
+            name: Organization name
+            full_address: Full address of the organization
+            phone: Phone number (e.g., '+1-555-0000')
+            first_name: First name of the contact person
+            last_name: Last name of the contact person
+
+        Returns:
+            Org object with creation details
+        """
+        data = {
+            'name': name,
+            'full_address': full_address,
+            'phone': phone,
+            'first_name': first_name,
+            'last_name': last_name
+        }
+        response = self._client._post('/v1/console/hid/orgs', data)
+        return Org(self._client, response)
+
+class HID:
+    def __init__(self, client):
+        self._client = client
+        self.orgs = HIDOrgs(client)
+
 class Console:
     def __init__(self, client):
         self._client = client
+        self.hid = HID(client)
 
     def create_template(self, **kwargs) -> Template:
         """Create a new card template"""

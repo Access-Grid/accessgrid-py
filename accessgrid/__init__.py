@@ -23,11 +23,12 @@ from .client import (
     AccessGridError,
     AuthenticationError,
     AccessCard,
-    Template
+    Template,
+    Org
 )
 
 # Version of the accessgrid package
-__version__ = "0.1.8"
+__version__ = "0.2.0"
 
 # List of public objects that will be exported with "from accessgrid import *"
 __all__ = [
@@ -35,5 +36,6 @@ __all__ = [
     'AccessGridError',
     'AuthenticationError',
     'AccessCard',
-    'Template'
+    'Template',
+    'Org'
 ]
