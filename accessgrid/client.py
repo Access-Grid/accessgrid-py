@@ -41,7 +41,23 @@ class AccessCard:
         
     def __str__(self) -> str:
         return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}', card_template_id='{self.card_template_id}')"
-    
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+class UnifiedAccessPass:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get('id')
+        self.url = data.get('install_url')
+        self.install_url = data.get('install_url')
+        self.state = data.get('state')
+        self.status = data.get('status')
+        self.details = [AccessCard(client, item) for item in data.get('details', [])]
+
+    def __str__(self) -> str:
+        return f"UnifiedAccessPass(id='{self.id}', state='{self.state}', cards={len(self.details)})"
+
     def __repr__(self) -> str:
         return self.__str__()
 
@@ -87,12 +103,14 @@ class AccessCards:
     def __init__(self, client):
         self._client = client
 
-    def issue(self, **kwargs) -> AccessCard:
-        """Issue a new access card"""
+    def issue(self, **kwargs) -> Union[AccessCard, UnifiedAccessPass]:
+        """Issue a new access card or unified access pass"""
         response = self._client._post('/v1/key-cards', kwargs)
+        if 'details' in response:
+            return UnifiedAccessPass(self._client, response)
         return AccessCard(self._client, response)
         
-    def provision(self, **kwargs) -> AccessCard:
+    def provision(self, **kwargs) -> Union[AccessCard, UnifiedAccessPass]:
         """Alias for issue() method to maintain backwards compatibility"""
         return self.issue(**kwargs)
 
