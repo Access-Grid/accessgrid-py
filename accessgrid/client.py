@@ -99,6 +99,34 @@ class Org:
     def __repr__(self) -> str:
         return self.__str__()
 
+class TemplateInfo:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get('id')
+        self.name = data.get('name')
+        self.platform = data.get('platform')
+
+    def __str__(self) -> str:
+        return f"TemplateInfo(id='{self.id}', name='{self.name}', platform='{self.platform}')"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+class PassTemplatePair:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get('id')
+        self.name = data.get('name')
+        self.created_at = data.get('created_at')
+        self.android_template = TemplateInfo(client, data['android_template']) if data.get('android_template') else None
+        self.ios_template = TemplateInfo(client, data['ios_template']) if data.get('ios_template') else None
+
+    def __str__(self) -> str:
+        return f"PassTemplatePair(id='{self.id}', name='{self.name}')"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 class AccessCards:
     def __init__(self, client):
         self._client = client
@@ -253,6 +281,27 @@ class Console:
     def get_logs(self, template_id: str, **kwargs) -> Dict[str, Any]:
         """Get event logs for a card template"""
         return self._client._get(f'/v1/console/card-templates/{template_id}/logs', params=kwargs)
+
+    def list_pass_template_pairs(self, **kwargs) -> Dict[str, Any]:
+        """
+        List Pass Template Pairs with pagination support.
+
+        Args:
+            page: Page number for pagination (default: 1)
+            per_page: Number of results per page (default: 50, max: 100)
+
+        Returns:
+            Dict containing pass_template_pairs list and pagination info
+        """
+        response = self._client._get('/v1/console/pass-template-pairs', params=kwargs)
+
+        if 'pass_template_pairs' in response:
+            response['pass_template_pairs'] = [
+                PassTemplatePair(self._client, pair)
+                for pair in response['pass_template_pairs']
+            ]
+
+        return response
 
 class AccessGrid:
     def __init__(self, account_id: str, secret_key: str, base_url: str = 'https://api.accessgrid.com'):
