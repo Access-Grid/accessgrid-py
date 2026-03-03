@@ -2,9 +2,7 @@ import base64
 import hashlib
 import hmac
 import json
-from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Union
-from urllib.parse import quote
 
 import requests
 
