@@ -63,6 +63,26 @@ class TestAccessCards:
         assert call_args['headers']['Content-Type'] == 'application/json'
 
     @patch('requests.request')
+    def test_provision_card_auth_error(self, mock_request, client, mock_provision_params):
+        error_response = Mock()
+        error_response.status_code = 401
+        error_response.text = 'Unauthorized'
+        mock_request.return_value = error_response
+
+        with pytest.raises(AuthenticationError, match='Invalid credentials'):
+            client.access_cards.provision(**mock_provision_params)
+
+    @patch('requests.request')
+    def test_provision_card_balance_error(self, mock_request, client, mock_provision_params):
+        error_response = Mock()
+        error_response.status_code = 402
+        error_response.text = 'Payment required'
+        mock_request.return_value = error_response
+
+        with pytest.raises(AccessGridError, match='Insufficient account balance'):
+            client.access_cards.provision(**mock_provision_params)
+
+    @patch('requests.request')
     def test_provision_card_error(self, mock_request, client, mock_provision_params):
         error_response = Mock()
         error_response.status_code = 400
