@@ -241,6 +241,68 @@ class TestConsole:
         assert call_args['url'] == f"{client.base_url}/v1/console/card-templates/{template_id}"
 
     @patch('requests.request')
+    def test_list_pass_template_pairs(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'pass_template_pairs': [
+                {
+                    'id': 'pair-1',
+                    'name': 'Employee Badge',
+                    'created_at': '2025-01-15T10:00:00Z',
+                    'android_template': {
+                        'id': 'tmpl-android-1',
+                        'name': 'Android Employee Badge',
+                        'platform': 'google'
+                    },
+                    'ios_template': {
+                        'id': 'tmpl-ios-1',
+                        'name': 'iOS Employee Badge',
+                        'platform': 'apple'
+                    }
+                },
+                {
+                    'id': 'pair-2',
+                    'name': 'Visitor Pass',
+                    'created_at': '2025-02-01T12:00:00Z',
+                    'android_template': None,
+                    'ios_template': {
+                        'id': 'tmpl-ios-2',
+                        'name': 'iOS Visitor Pass',
+                        'platform': 'apple'
+                    }
+                }
+            ],
+            'page': 1,
+            'per_page': 50
+        }
+        mock_request.return_value = mock_resp
+
+        result = client.console.list_pass_template_pairs(page=1, per_page=50)
+
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'GET'
+        assert call_args['url'] == f"{client.base_url}/v1/console/pass-template-pairs"
+        assert call_args['params']['page'] == 1
+        assert call_args['params']['per_page'] == 50
+
+        pairs = result['pass_template_pairs']
+        assert len(pairs) == 2
+
+        # First pair — both platforms
+        assert pairs[0].id == 'pair-1'
+        assert pairs[0].name == 'Employee Badge'
+        assert pairs[0].android_template.id == 'tmpl-android-1'
+        assert pairs[0].android_template.platform == 'google'
+        assert pairs[0].ios_template.id == 'tmpl-ios-1'
+        assert pairs[0].ios_template.platform == 'apple'
+
+        # Second pair — android_template is None
+        assert pairs[1].id == 'pair-2'
+        assert pairs[1].android_template is None
+        assert pairs[1].ios_template.id == 'tmpl-ios-2'
+
+    @patch('requests.request')
     def test_get_logs(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
         template_id = '0xd3adb00b5'
