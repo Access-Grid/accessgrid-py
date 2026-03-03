@@ -10,7 +10,7 @@ try:
     from importlib.metadata import version
 
     __version__ = version("accessgrid")
-except:
+except Exception:
     __version__ = "unknown"
 
 
