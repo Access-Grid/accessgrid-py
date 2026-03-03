@@ -142,6 +142,13 @@ class TestAccessCards:
         assert call_args['method'] == 'POST'
         assert call_args['url'] == f"{client.base_url}/v1/key-cards/{card_id}/unlink"
         assert call_args['json'] is None
+
+        # Test delete
+        client.access_cards.delete(card_id)
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'POST'
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards/{card_id}/delete"
+        assert call_args['json'] is None
     
     @patch('requests.request')
     def test_list_keys(self, mock_request, client, mock_response):
