@@ -376,6 +376,91 @@ class TestConsole:
         assert pairs[1].android_template is None
         assert pairs[1].ios_template.id == 'tmpl-ios-2'
 
+class TestHIDOrgs:
+    @patch('requests.request')
+    def test_create_org(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'id': 'org-1',
+            'name': 'Acme Corp',
+            'slug': 'acme-corp',
+            'status': 'pending',
+            'full_address': '123 Main St',
+            'phone': '+1-555-0000',
+            'first_name': 'Jane',
+            'last_name': 'Doe',
+            'created_at': '2025-01-15T10:00:00Z'
+        }
+        mock_request.return_value = mock_resp
+
+        org = client.console.hid.orgs.create(
+            name='Acme Corp',
+            full_address='123 Main St',
+            phone='+1-555-0000',
+            first_name='Jane',
+            last_name='Doe'
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'POST'
+        assert call_args['url'] == f"{client.base_url}/v1/console/hid/orgs"
+        assert call_args['json']['name'] == 'Acme Corp'
+        assert call_args['json']['first_name'] == 'Jane'
+        assert org.id == 'org-1'
+        assert org.name == 'Acme Corp'
+        assert org.slug == 'acme-corp'
+        assert org.status == 'pending'
+
+    @patch('requests.request')
+    def test_activate_org(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'id': 'org-1',
+            'name': 'Acme Corp',
+            'slug': 'acme-corp',
+            'status': 'active',
+            'email': 'admin@acme.com'
+        }
+        mock_request.return_value = mock_resp
+
+        org = client.console.hid.orgs.activate(
+            email='admin@acme.com',
+            password='hid-registration-pw'
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'POST'
+        assert call_args['url'] == f"{client.base_url}/v1/console/hid/orgs/activate"
+        assert call_args['json']['email'] == 'admin@acme.com'
+        assert call_args['json']['password'] == 'hid-registration-pw'
+        assert org.id == 'org-1'
+        assert org.status == 'active'
+
+    @patch('requests.request')
+    def test_list_orgs(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'orgs': [
+                {'id': 'org-1', 'name': 'Acme Corp', 'status': 'active'},
+                {'id': 'org-2', 'name': 'Globex', 'status': 'pending'}
+            ]
+        }
+        mock_request.return_value = mock_resp
+
+        orgs = client.console.hid.orgs.list()
+
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'GET'
+        assert call_args['url'] == f"{client.base_url}/v1/console/hid/orgs"
+        assert len(orgs) == 2
+        assert orgs[0].id == 'org-1'
+        assert orgs[0].name == 'Acme Corp'
+        assert orgs[1].status == 'pending'
+
+class TestConsoleLogs:
     @patch('requests.request')
     def test_get_logs(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
