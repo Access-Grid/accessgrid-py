@@ -45,7 +45,11 @@ class AccessCard:
         self.metadata = data.get("metadata", {})
 
     def __str__(self) -> str:
-        return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}', card_template_id='{self.card_template_id}')"
+        return (
+            f"AccessCard(name='{self.full_name}', id='{self.id}', "
+            f"state='{self.state}', "
+            f"card_template_id='{self.card_template_id}')"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -59,10 +63,15 @@ class UnifiedAccessPass:
         self.install_url = data.get("install_url")
         self.state = data.get("state")
         self.status = data.get("status")
-        self.details = [AccessCard(client, item) for item in data.get("details", [])]
+        self.details = [
+            AccessCard(client, item) for item in data.get("details", [])
+        ]
 
     def __str__(self) -> str:
-        return f"UnifiedAccessPass(id='{self.id}', state='{self.state}', cards={len(self.details)})"
+        return (
+            f"UnifiedAccessPass(id='{self.id}', "
+            f"state='{self.state}', cards={len(self.details)})"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -102,7 +111,10 @@ class Org:
         self.updated_at = data.get("updated_at")
 
     def __str__(self) -> str:
-        return f"Org(name='{self.name}', id='{self.id}', slug='{self.slug}', status='{self.status}')"
+        return (
+            f"Org(name='{self.name}', id='{self.id}', "
+            f"slug='{self.slug}', status='{self.status}')"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -116,7 +128,10 @@ class TemplateInfo:
         self.platform = data.get("platform")
 
     def __str__(self) -> str:
-        return f"TemplateInfo(id='{self.id}', name='{self.name}', platform='{self.platform}')"
+        return (
+            f"TemplateInfo(id='{self.id}', "
+            f"name='{self.name}', platform='{self.platform}')"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -355,14 +370,16 @@ class AccessGrid:
         Generate HMAC signature for the payload according to the shared secret scheme:
         SHA256.update(shared_secret + base64.encode(payload)).hexdigest()
 
-        For requests with no payload (like GET, or actions like suspend/unlink/resume),
-        caller should provide a payload with {"id": "{resource_id}"}
+        For requests with no payload (like GET, or actions like
+        suspend/unlink/resume), caller should provide a payload
+        with {"id": "{resource_id}"}
         """
         # Base64 encode the payload
         payload_bytes = payload.encode()
         encoded_payload = base64.b64encode(payload_bytes)
 
-        # Create HMAC using the shared secret as the key and the base64 encoded payload as the message
+        # Create HMAC using the shared secret as the key
+        # and the base64 encoded payload as the message
         signature = hmac.new(
             self.secret_key.encode(), encoded_payload, hashlib.sha256
         ).hexdigest()
@@ -382,10 +399,12 @@ class AccessGrid:
         # Extract resource ID from the endpoint if needed for signature
         resource_id = None
         if method == "GET" or (method == "POST" and (not data or data == {})):
-            # Extract the ID from the endpoint - patterns like /resource/{id} or /resource/{id}/action
+            # Extract ID from endpoint patterns like
+            # /resource/{id} or /resource/{id}/action
             parts = endpoint.strip("/").split("/")
             if len(parts) >= 2:
-                # For actions like unlink/suspend/resume, get the card ID (second to last part)
+                # For actions like unlink/suspend/resume,
+                # get the card ID (second to last part)
                 if parts[-1] in ["suspend", "resume", "unlink", "delete"]:
                     resource_id = parts[-2]
                 else:
@@ -396,7 +415,7 @@ class AccessGrid:
         # 1. POST requests with empty body (like unlink/suspend/resume)
         # 2. GET requests
         if (method == "POST" and not data) or method == "GET":
-            # For these requests, use {"id": "card_id"} as the payload for signature generation
+            # Use {"id": "card_id"} as the signature payload
             if resource_id:
                 payload = json.dumps({"id": resource_id})
             else:
@@ -405,8 +424,8 @@ class AccessGrid:
             # For normal POST/PUT/PATCH with body, use the actual payload
             payload = json.dumps(data) if data else ""
 
-        # Generate signature - we don't need to pass resource_id separately since we've already
-        # incorporated it into the payload when needed
+        # Generate signature — resource_id is already
+        # incorporated into the payload when needed
         signature = self._generate_signature(payload)
 
         headers = {
@@ -420,8 +439,8 @@ class AccessGrid:
         # as it's handled in the request section below
 
         try:
-            # For requests with empty bodies (GET or action endpoints like unlink/suspend/resume),
-            # we need to include the sig_payload parameter
+            # For empty-body requests (GET or actions),
+            # include the sig_payload parameter
             if method == "GET" or (method == "POST" and not data):
                 if not params:
                     params = {}

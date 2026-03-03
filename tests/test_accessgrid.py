@@ -107,6 +107,9 @@ class TestAccessCards:
         assert len(result.details) == 2
         assert result.details[0].id == "card-ios"
         assert result.details[1].id == "card-android"
+        expected_str = "UnifiedAccessPass(id='uap-1', state='active', cards=2)"  # noqa: E501
+        assert str(result) == expected_str
+        assert repr(result) == expected_str
 
     @patch("requests.request")
     def test_provision_card_auth_error(
@@ -169,6 +172,9 @@ class TestAccessCards:
         assert card.state == "active"
         assert card.install_url == "https://example.com/install/card-123"
         assert card.card_template_id == "tmpl-456"
+        expected_str = "AccessCard(name='John Doe', id='card-123', state='active', card_template_id='tmpl-456')"  # noqa: E501
+        assert str(card) == expected_str
+        assert repr(card) == expected_str
 
     @patch("requests.request")
     def test_update_card(self, mock_request, client, mock_response):
@@ -393,6 +399,9 @@ class TestConsole:
         assert pairs[0].name == "Employee Badge"
         assert pairs[0].android_template.id == "tmpl-android-1"
         assert pairs[0].android_template.platform == "google"
+        expected_ti = "TemplateInfo(id='tmpl-android-1', name='Android Employee Badge', platform='google')"  # noqa: E501
+        assert str(pairs[0].android_template) == expected_ti
+        assert repr(pairs[0].android_template) == expected_ti
         assert pairs[0].ios_template.id == "tmpl-ios-1"
         assert pairs[0].ios_template.platform == "apple"
 
@@ -437,6 +446,9 @@ class TestHIDOrgs:
         assert org.name == "Acme Corp"
         assert org.slug == "acme-corp"
         assert org.status == "pending"
+        expected_str = "Org(name='Acme Corp', id='org-1', slug='acme-corp', status='pending')"  # noqa: E501
+        assert str(org) == expected_str
+        assert repr(org) == expected_str
 
     @patch("requests.request")
     def test_activate_org(self, mock_request, client):
