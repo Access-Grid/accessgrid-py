@@ -230,6 +230,24 @@ class TestConsole:
         assert call_args['json'] == mock_template_params
 
     @patch('requests.request')
+    def test_update_template(self, mock_request, client, mock_response):
+        mock_request.return_value = mock_response
+        template_id = '0xd3adb00b5'
+        update_params = {
+            'name': 'Updated Template',
+            'allow_on_multiple_devices': False,
+            'watch_count': 1,
+            'iphone_count': 2
+        }
+
+        template = client.console.update_template(template_id, **update_params)
+
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'PUT'
+        assert call_args['url'] == f"{client.base_url}/v1/console/card-templates/{template_id}"
+        assert call_args['json'] == update_params
+
+    @patch('requests.request')
     def test_read_template(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
         template_id = '0xd3adb00b5'
