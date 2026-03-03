@@ -74,6 +74,31 @@ class TestAccessCards:
             client.access_cards.provision(**mock_provision_params)
 
     @patch('requests.request')
+    def test_get_card(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'id': 'card-123',
+            'full_name': 'John Doe',
+            'state': 'active',
+            'install_url': 'https://example.com/install/card-123',
+            'card_template_id': 'tmpl-456',
+            'expiration_date': '2025-12-31'
+        }
+        mock_request.return_value = mock_resp
+
+        card = client.access_cards.get('card-123')
+
+        call_args = mock_request.call_args[1]
+        assert call_args['method'] == 'GET'
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards/card-123"
+        assert card.id == 'card-123'
+        assert card.full_name == 'John Doe'
+        assert card.state == 'active'
+        assert card.install_url == 'https://example.com/install/card-123'
+        assert card.card_template_id == 'tmpl-456'
+
+    @patch('requests.request')
     def test_update_card(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
         card_id = '0xc4rd1d'
