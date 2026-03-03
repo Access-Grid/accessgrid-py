@@ -63,6 +63,42 @@ class TestAccessCards:
         assert call_args['headers']['Content-Type'] == 'application/json'
 
     @patch('requests.request')
+    def test_issue_returns_unified_access_pass(self, mock_request, client, mock_provision_params):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            'id': 'uap-1',
+            'install_url': 'https://example.com/install/uap-1',
+            'state': 'active',
+            'status': 'issued',
+            'details': [
+                {
+                    'id': 'card-ios',
+                    'state': 'active',
+                    'full_name': 'John Doe',
+                    'install_url': 'https://example.com/install/card-ios'
+                },
+                {
+                    'id': 'card-android',
+                    'state': 'active',
+                    'full_name': 'John Doe',
+                    'install_url': 'https://example.com/install/card-android'
+                }
+            ]
+        }
+        mock_request.return_value = mock_resp
+
+        result = client.access_cards.issue(**mock_provision_params)
+
+        assert type(result).__name__ == 'UnifiedAccessPass'
+        assert result.id == 'uap-1'
+        assert result.state == 'active'
+        assert result.status == 'issued'
+        assert len(result.details) == 2
+        assert result.details[0].id == 'card-ios'
+        assert result.details[1].id == 'card-android'
+
+    @patch('requests.request')
     def test_provision_card_auth_error(self, mock_request, client, mock_provision_params):
         error_response = Mock()
         error_response.status_code = 401
