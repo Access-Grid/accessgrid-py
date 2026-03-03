@@ -56,7 +56,7 @@ class TestAccessCards:
         mock_request.assert_called_once()
         call_args = mock_request.call_args[1]
         assert call_args['method'] == 'POST'
-        assert call_args['url'] == f"{client.base_url}/api/v1/nfc_keys/issue"
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards"
         assert call_args['json'] == mock_provision_params
         assert call_args['headers']['X-ACCT-ID'] == MOCK_ACCOUNT_ID
         assert 'X-PAYLOAD-SIG' in call_args['headers']
@@ -76,20 +76,20 @@ class TestAccessCards:
     @patch('requests.request')
     def test_update_card(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
+        card_id = '0xc4rd1d'
         update_params = {
-            'card_id': '0xc4rd1d',
             'employee_id': '987654321',
             'full_name': 'Updated Employee Name',
             'classification': 'contractor',
             'expiration_date': '2025-02-22T21:04:03.664Z'
         }
-        
-        card = client.access_cards.update(**update_params)
-        
+
+        card = client.access_cards.update(card_id, **update_params)
+
         mock_request.assert_called_once()
         call_args = mock_request.call_args[1]
-        assert call_args['method'] == 'POST'
-        assert call_args['url'] == f"{client.base_url}/api/v1/nfc_keys/update"
+        assert call_args['method'] == 'PATCH'
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards/{card_id}"
         assert call_args['json'] == update_params
 
     @patch('requests.request')
@@ -101,23 +101,27 @@ class TestAccessCards:
         client.access_cards.suspend(card_id)
         call_args = mock_request.call_args[1]
         assert call_args['method'] == 'POST'
-        assert call_args['url'] == f"{client.base_url}/api/v1/nfc_keys/manage"
-        assert call_args['json'] == {'card_id': card_id, 'manage_action': 'suspend'}
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards/{card_id}/suspend"
+        assert call_args['json'] is None
 
         # Test resume
         client.access_cards.resume(card_id)
         call_args = mock_request.call_args[1]
-        assert call_args['json'] == {'card_id': card_id, 'manage_action': 'resume'}
+        assert call_args['method'] == 'POST'
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards/{card_id}/resume"
+        assert call_args['json'] is None
 
         # Test unlink
         client.access_cards.unlink(card_id)
         call_args = mock_request.call_args[1]
-        assert call_args['json'] == {'card_id': card_id, 'manage_action': 'unlink'}
+        assert call_args['method'] == 'POST'
+        assert call_args['url'] == f"{client.base_url}/v1/key-cards/{card_id}/unlink"
+        assert call_args['json'] is None
     
     @patch('requests.request')
     def test_list_keys(self, mock_request, client, mock_response):
         mock_response.json.return_value = {
-            'items': [
+            'keys': [
                 {
                     'id': 'key1',
                     'state': 'active',
@@ -136,23 +140,26 @@ class TestAccessCards:
         }
         mock_request.return_value = mock_response
         template_id = '0xd3adb00b5'
-        
+
         # Test list with template_id only
         keys = client.access_cards.list(template_id=template_id)
         assert len(keys) == 2
         assert keys[0].id == 'key1'
         assert keys[0].state == 'active'
         assert keys[0].full_name == 'John Doe'
-        
+
         call_args = mock_request.call_args[1]
         assert call_args['method'] == 'GET'
         assert call_args['url'] == f"{client.base_url}/v1/key-cards"
-        assert call_args['params'] == {'template_id': template_id, 'sig_payload': '{}'}
-        
+        assert call_args['params']['template_id'] == template_id
+        assert 'sig_payload' in call_args['params']
+
         # Test list with template_id and state
         keys = client.access_cards.list(template_id=template_id, state='active')
         call_args = mock_request.call_args[1]
-        assert call_args['params'] == {'template_id': template_id, 'state': 'active', 'sig_payload': '{}'}
+        assert call_args['params']['template_id'] == template_id
+        assert call_args['params']['state'] == 'active'
+        assert 'sig_payload' in call_args['params']
 
 class TestConsole:
     @pytest.fixture
@@ -187,7 +194,7 @@ class TestConsole:
         
         call_args = mock_request.call_args[1]
         assert call_args['method'] == 'POST'
-        assert call_args['url'] == f"{client.base_url}/api/v1/enterprise/create_template"
+        assert call_args['url'] == f"{client.base_url}/v1/console/card-templates"
         assert call_args['json'] == mock_template_params
 
     @patch('requests.request')
@@ -199,10 +206,10 @@ class TestConsole:
         
         call_args = mock_request.call_args[1]
         assert call_args['method'] == 'GET'
-        assert call_args['url'] == f"{client.base_url}/api/v1/enterprise/read_template/{template_id}"
+        assert call_args['url'] == f"{client.base_url}/v1/console/card-templates/{template_id}"
 
     @patch('requests.request')
-    def test_event_log(self, mock_request, client, mock_response):
+    def test_get_logs(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
         template_id = '0xd3adb00b5'
         filters = {
@@ -211,10 +218,13 @@ class TestConsole:
             'end_date': '2025-02-01T00:00:00Z',
             'event_type': 'install'
         }
-        
-        events = client.console.event_log(template_id, filters=filters)
-        
+
+        events = client.console.get_logs(template_id, **filters)
+
         call_args = mock_request.call_args[1]
         assert call_args['method'] == 'GET'
-        assert call_args['url'] == f"{client.base_url}/api/v1/enterprise/logs/{template_id}"
-        assert call_args['params'] == {'filters': filters, 'page': 1, 'per_page': 50}
+        assert call_args['url'] == f"{client.base_url}/v1/console/card-templates/{template_id}/logs"
+        assert call_args['params']['device'] == 'mobile'
+        assert call_args['params']['start_date'] == '2025-01-01T00:00:00Z'
+        assert call_args['params']['end_date'] == '2025-02-01T00:00:00Z'
+        assert call_args['params']['event_type'] == 'install'
