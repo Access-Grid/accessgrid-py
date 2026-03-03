@@ -107,7 +107,9 @@ class TestAccessCards:
         assert len(result.details) == 2
         assert result.details[0].id == "card-ios"
         assert result.details[1].id == "card-android"
-        expected_str = "UnifiedAccessPass(id='uap-1', state='active', cards=2)"  # noqa: E501
+        expected_str = (
+            "UnifiedAccessPass(id='uap-1', state='active', cards=2)"  # noqa: E501
+        )
         assert str(result) == expected_str
         assert repr(result) == expected_str
 

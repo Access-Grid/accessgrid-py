@@ -63,9 +63,7 @@ class UnifiedAccessPass:
         self.install_url = data.get("install_url")
         self.state = data.get("state")
         self.status = data.get("status")
-        self.details = [
-            AccessCard(client, item) for item in data.get("details", [])
-        ]
+        self.details = [AccessCard(client, item) for item in data.get("details", [])]
 
     def __str__(self) -> str:
         return (
