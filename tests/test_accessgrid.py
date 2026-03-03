@@ -59,7 +59,7 @@ class TestAccessCards:
     ):
         mock_request.return_value = mock_response
 
-        card = client.access_cards.provision(**mock_provision_params)
+        client.access_cards.provision(**mock_provision_params)
 
         mock_request.assert_called_once()
         call_args = mock_request.call_args[1]
@@ -181,7 +181,7 @@ class TestAccessCards:
             "expiration_date": "2025-02-22T21:04:03.664Z",
         }
 
-        card = client.access_cards.update(card_id, **update_params)
+        client.access_cards.update(card_id, **update_params)
 
         mock_request.assert_called_once()
         call_args = mock_request.call_args[1]
@@ -297,7 +297,7 @@ class TestConsole:
     ):
         mock_request.return_value = mock_response
 
-        template = client.console.create_template(**mock_template_params)
+        client.console.create_template(**mock_template_params)
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "POST"
@@ -315,7 +315,7 @@ class TestConsole:
             "iphone_count": 2,
         }
 
-        template = client.console.update_template(template_id, **update_params)
+        client.console.update_template(template_id, **update_params)
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "PUT"
@@ -330,7 +330,7 @@ class TestConsole:
         mock_request.return_value = mock_response
         template_id = "0xd3adb00b5"
 
-        template = client.console.read_template(template_id)
+        client.console.read_template(template_id)
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
@@ -498,7 +498,7 @@ class TestConsoleLogs:
             "event_type": "install",
         }
 
-        events = client.console.get_logs(template_id, **filters)
+        client.console.get_logs(template_id, **filters)
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
