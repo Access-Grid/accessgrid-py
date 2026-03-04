@@ -19,13 +19,13 @@ For more information, see https://www.accessgrid.com/docs
 
 # Import all public components
 from .client import (
+    AccessCard,
     AccessGrid,
     AccessGridError,
     AuthenticationError,
-    AccessCard,
-    UnifiedAccessPass,
+    Org,
     Template,
-    Org
+    UnifiedAccessPass,
 )
 
 # Version of the accessgrid package
@@ -33,11 +33,11 @@ __version__ = "0.2.1"
 
 # List of public objects that will be exported with "from accessgrid import *"
 __all__ = [
-    'AccessGrid',
-    'AccessGridError',
-    'AuthenticationError',
-    'AccessCard',
-    'UnifiedAccessPass',
-    'Template',
-    'Org'
+    "AccessGrid",
+    "AccessGridError",
+    "AuthenticationError",
+    "AccessCard",
+    "UnifiedAccessPass",
+    "Template",
+    "Org",
 ]
