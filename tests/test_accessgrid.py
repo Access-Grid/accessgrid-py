@@ -413,6 +413,205 @@ class TestConsole:
         assert pairs[1].ios_template.id == "tmpl-ios-2"
 
 
+class TestLedgerItems:
+    @pytest.fixture
+    def mock_ledger_response(self):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "ledger_items": [
+                {
+                    "id": "li-1",
+                    "created_at": "2025-03-01T12:00:00Z",
+                    "amount": 150,
+                    "kind": "provision",
+                    "metadata": {"access_pass_ex_id": "ap-1"},
+                    "access_pass": {
+                        "id": "ap-1",
+                        "full_name": "Jane Doe",
+                        "state": "active",
+                        "metadata": {"department": "Engineering"},
+                        "unified_access_pass_ex_id": "uap-1",
+                        "pass_template": {
+                            "id": "pt-1",
+                            "name": "Employee Badge",
+                            "protocol": "desfire",
+                            "platform": "apple",
+                            "use_case": "employee_badge",
+                        },
+                    },
+                },
+                {
+                    "id": "li-2",
+                    "created_at": "2025-03-02T12:00:00Z",
+                    "amount": 50,
+                    "kind": "renewal",
+                    "metadata": {},
+                    "access_pass": None,
+                },
+            ],
+            "pagination": {
+                "current_page": 1,
+                "per_page": 50,
+                "total_pages": 3,
+                "total_count": 125,
+            },
+        }
+        return mock_resp
+
+    @patch("requests.request")
+    def test_list_ledger_items(self, mock_request, client, mock_ledger_response):
+        mock_request.return_value = mock_ledger_response
+
+        client.console.list_ledger_items()
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert call_args["url"] == f"{client.base_url}/v1/console/ledger-items"
+
+    @patch("requests.request")
+    def test_list_ledger_items_with_pagination(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        client.console.list_ledger_items(page=2, per_page=10)
+
+        call_args = mock_request.call_args[1]
+        assert call_args["params"]["page"] == 2
+        assert call_args["params"]["per_page"] == 10
+
+    @patch("requests.request")
+    def test_list_ledger_items_with_date_filters(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        client.console.list_ledger_items(
+            start_date="2025-03-01T00:00:00Z",
+            end_date="2025-03-31T23:59:59Z",
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["params"]["start_date"] == "2025-03-01T00:00:00Z"
+        assert call_args["params"]["end_date"] == "2025-03-31T23:59:59Z"
+
+    @patch("requests.request")
+    def test_list_ledger_items_deserializes_models(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        result = client.console.list_ledger_items()
+        items = result["ledger_items"]
+
+        assert len(items) == 2
+
+        item = items[0]
+        assert type(item).__name__ == "LedgerItem"
+        assert item.id == "li-1"
+        assert item.created_at == "2025-03-01T12:00:00Z"
+        assert item.amount == 150
+        assert item.kind == "provision"
+        assert item.metadata == {"access_pass_ex_id": "ap-1"}
+
+    @patch("requests.request")
+    def test_list_ledger_items_nested_access_pass(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        result = client.console.list_ledger_items()
+        item = result["ledger_items"][0]
+
+        assert type(item.access_pass).__name__ == "LedgerItemAccessPass"
+        assert item.access_pass.id == "ap-1"
+        assert item.access_pass.full_name == "Jane Doe"
+        assert item.access_pass.state == "active"
+        assert item.access_pass.metadata == {"department": "Engineering"}
+        assert item.access_pass.unified_access_pass_ex_id == "uap-1"
+
+    @patch("requests.request")
+    def test_list_ledger_items_nested_pass_template(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        result = client.console.list_ledger_items()
+        tmpl = result["ledger_items"][0].access_pass.pass_template
+
+        assert type(tmpl).__name__ == "LedgerItemPassTemplate"
+        assert tmpl.id == "pt-1"
+        assert tmpl.name == "Employee Badge"
+        assert tmpl.protocol == "desfire"
+        assert tmpl.platform == "apple"
+        assert tmpl.use_case == "employee_badge"
+
+    @patch("requests.request")
+    def test_list_ledger_items_null_access_pass(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        result = client.console.list_ledger_items()
+        item = result["ledger_items"][1]
+
+        assert item.id == "li-2"
+        assert item.access_pass is None
+
+    @patch("requests.request")
+    def test_list_ledger_items_null_pass_template(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "ledger_items": [
+                {
+                    "id": "li-3",
+                    "created_at": "2025-03-03T12:00:00Z",
+                    "amount": 75,
+                    "kind": "provision",
+                    "metadata": {},
+                    "access_pass": {
+                        "id": "ap-2",
+                        "full_name": "John Smith",
+                        "state": "suspended",
+                        "metadata": {},
+                        "unified_access_pass_ex_id": None,
+                        "pass_template": None,
+                    },
+                }
+            ],
+            "pagination": {
+                "current_page": 1,
+                "per_page": 50,
+                "total_pages": 1,
+                "total_count": 1,
+            },
+        }
+        mock_request.return_value = mock_resp
+
+        result = client.console.list_ledger_items()
+        item = result["ledger_items"][0]
+
+        assert type(item.access_pass).__name__ == "LedgerItemAccessPass"
+        assert item.access_pass.pass_template is None
+
+    @patch("requests.request")
+    def test_list_ledger_items_preserves_pagination(
+        self, mock_request, client, mock_ledger_response
+    ):
+        mock_request.return_value = mock_ledger_response
+
+        result = client.console.list_ledger_items()
+
+        assert result["pagination"] == {
+            "current_page": 1,
+            "per_page": 50,
+            "total_pages": 3,
+            "total_count": 125,
+        }
+
+
 class TestHIDOrgs:
     @patch("requests.request")
     def test_create_org(self, mock_request, client):

@@ -23,6 +23,9 @@ from .client import (
     AccessGrid,
     AccessGridError,
     AuthenticationError,
+    LedgerItem,
+    LedgerItemAccessPass,
+    LedgerItemPassTemplate,
     Org,
     Template,
     UnifiedAccessPass,
@@ -40,4 +43,7 @@ __all__ = [
     "UnifiedAccessPass",
     "Template",
     "Org",
+    "LedgerItem",
+    "LedgerItemAccessPass",
+    "LedgerItemPassTemplate",
 ]

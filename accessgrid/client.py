@@ -159,6 +159,69 @@ class PassTemplatePair:
         return self.__str__()
 
 
+class LedgerItemPassTemplate:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.name = data.get("name")
+        self.protocol = data.get("protocol")
+        self.platform = data.get("platform")
+        self.use_case = data.get("use_case")
+
+    def __str__(self) -> str:
+        return f"LedgerItemPassTemplate(id='{self.id}', name='{self.name}')"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class LedgerItemAccessPass:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.full_name = data.get("full_name")
+        self.state = data.get("state")
+        self.metadata = data.get("metadata", {})
+        self.unified_access_pass_ex_id = data.get("unified_access_pass_ex_id")
+        self.pass_template = (
+            LedgerItemPassTemplate(client, data["pass_template"])
+            if data.get("pass_template")
+            else None
+        )
+
+    def __str__(self) -> str:
+        return (
+            f"LedgerItemAccessPass(id='{self.id}', "
+            f"full_name='{self.full_name}', state='{self.state}')"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class LedgerItem:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.created_at = data.get("created_at")
+        self.amount = data.get("amount")
+        self.kind = data.get("kind")
+        self.metadata = data.get("metadata", {})
+        self.access_pass = (
+            LedgerItemAccessPass(client, data["access_pass"])
+            if data.get("access_pass")
+            else None
+        )
+
+    def __str__(self) -> str:
+        return (
+            f"LedgerItem(id='{self.id}', kind='{self.kind}', " f"amount={self.amount})"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
 class AccessCards:
     def __init__(self, client):
         self._client = client
@@ -338,6 +401,28 @@ class Console:
             response["pass_template_pairs"] = [
                 PassTemplatePair(self._client, pair)
                 for pair in response["pass_template_pairs"]
+            ]
+
+        return response
+
+    def list_ledger_items(self, **kwargs) -> Dict[str, Any]:
+        """
+        List Ledger Items with pagination and date filter support.
+
+        Args:
+            page: Page number for pagination (default: 1)
+            per_page: Number of results per page (default: 50, max: 100)
+            start_date: ISO8601 datetime to filter from
+            end_date: ISO8601 datetime to filter to
+
+        Returns:
+            Dict containing ledger_items list and pagination info
+        """
+        response = self._client._get("/v1/console/ledger-items", params=kwargs)
+
+        if "ledger_items" in response:
+            response["ledger_items"] = [
+                LedgerItem(self._client, item) for item in response["ledger_items"]
             ]
 
         return response
