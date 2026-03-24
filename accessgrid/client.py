@@ -1,152 +1,233 @@
 import base64
-import hmac
 import hashlib
+import hmac
 import json
+from typing import Any, Dict, List, Optional, Union
+
 import requests
-from datetime import datetime, timezone
-from urllib.parse import quote
-from typing import Optional, Dict, Any, List, Union
 
 try:
     from importlib.metadata import version
+
     __version__ = version("accessgrid")
-except:
+except Exception:
     __version__ = "unknown"
+
 
 class AccessGridError(Exception):
     """Base exception for AccessGrid SDK"""
+
     pass
+
 
 class AuthenticationError(AccessGridError):
     """Raised when authentication fails"""
+
     pass
+
 
 class AccessCard:
     def __init__(self, client, data: Dict[str, Any]):
         self._client = client
-        self.id = data.get('id')
-        self.url = data.get('install_url')
-        self.install_url = data.get('install_url')
-        self.details = data.get('details')
-        self.state = data.get('state')
-        self.full_name = data.get('full_name')
-        self.expiration_date = data.get('expiration_date')
-        self.card_template_id = data.get('card_template_id')
-        self.card_number = data.get('card_number')
-        self.site_code = data.get('site_code')
-        self.file_data = data.get('file_data')
-        self.direct_install_url = data.get('direct_install_url')
-        self.devices = data.get('devices', [])
-        self.metadata = data.get('metadata', {})
-        
+        self.id = data.get("id")
+        self.url = data.get("install_url")
+        self.install_url = data.get("install_url")
+        self.details = data.get("details")
+        self.state = data.get("state")
+        self.full_name = data.get("full_name")
+        self.expiration_date = data.get("expiration_date")
+        self.card_template_id = data.get("card_template_id")
+        self.card_number = data.get("card_number")
+        self.site_code = data.get("site_code")
+        self.file_data = data.get("file_data")
+        self.direct_install_url = data.get("direct_install_url")
+        self.devices = data.get("devices", [])
+        self.metadata = data.get("metadata", {})
+
     def __str__(self) -> str:
-        return f"AccessCard(name='{self.full_name}', id='{self.id}', state='{self.state}', card_template_id='{self.card_template_id}')"
-    
+        return (
+            f"AccessCard(name='{self.full_name}', id='{self.id}', "
+            f"state='{self.state}', "
+            f"card_template_id='{self.card_template_id}')"
+        )
+
     def __repr__(self) -> str:
         return self.__str__()
+
+
+class UnifiedAccessPass:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.url = data.get("install_url")
+        self.install_url = data.get("install_url")
+        self.state = data.get("state")
+        self.status = data.get("status")
+        self.details = [AccessCard(client, item) for item in data.get("details", [])]
+
+    def __str__(self) -> str:
+        return (
+            f"UnifiedAccessPass(id='{self.id}', "
+            f"state='{self.state}', cards={len(self.details)})"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 class Template:
     def __init__(self, client, data: Dict[str, Any]):
         self._client = client
-        self.id = data.get('id')
-        self.name = data.get('name')
-        self.platform = data.get('platform')
-        self.use_case = data.get('use_case')
-        self.protocol = data.get('protocol')
-        self.created_at = data.get('created_at')
-        self.last_published_at = data.get('last_published_at')
-        self.issued_keys_count = data.get('issued_keys_count')
-        self.active_keys_count = data.get('active_keys_count')
-        self.allowed_device_counts = data.get('allowed_device_counts')
-        self.support_settings = data.get('support_settings')
-        self.terms_settings = data.get('terms_settings')
-        self.style_settings = data.get('style_settings')
+        self.id = data.get("id")
+        self.name = data.get("name")
+        self.platform = data.get("platform")
+        self.use_case = data.get("use_case")
+        self.protocol = data.get("protocol")
+        self.created_at = data.get("created_at")
+        self.last_published_at = data.get("last_published_at")
+        self.issued_keys_count = data.get("issued_keys_count")
+        self.active_keys_count = data.get("active_keys_count")
+        self.allowed_device_counts = data.get("allowed_device_counts")
+        self.support_settings = data.get("support_settings")
+        self.terms_settings = data.get("terms_settings")
+        self.style_settings = data.get("style_settings")
+
 
 class Org:
     def __init__(self, client, data: Dict[str, Any]):
         self._client = client
-        self.id = data.get('id')
-        self.name = data.get('name')
-        self.slug = data.get('slug')
-        self.status = data.get('status')
-        self.full_address = data.get('full_address')
-        self.phone = data.get('phone')
-        self.first_name = data.get('first_name')
-        self.last_name = data.get('last_name')
-        self.email = data.get('email')
-        self.created_at = data.get('created_at')
-        self.updated_at = data.get('updated_at')
+        self.id = data.get("id")
+        self.name = data.get("name")
+        self.slug = data.get("slug")
+        self.status = data.get("status")
+        self.full_address = data.get("full_address")
+        self.phone = data.get("phone")
+        self.first_name = data.get("first_name")
+        self.last_name = data.get("last_name")
+        self.email = data.get("email")
+        self.created_at = data.get("created_at")
+        self.updated_at = data.get("updated_at")
 
     def __str__(self) -> str:
-        return f"Org(name='{self.name}', id='{self.id}', slug='{self.slug}', status='{self.status}')"
+        return (
+            f"Org(name='{self.name}', id='{self.id}', "
+            f"slug='{self.slug}', status='{self.status}')"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
+
+
+class TemplateInfo:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.name = data.get("name")
+        self.platform = data.get("platform")
+
+    def __str__(self) -> str:
+        return (
+            f"TemplateInfo(id='{self.id}', "
+            f"name='{self.name}', platform='{self.platform}')"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class PassTemplatePair:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.name = data.get("name")
+        self.created_at = data.get("created_at")
+        self.android_template = (
+            TemplateInfo(client, data["android_template"])
+            if data.get("android_template")
+            else None
+        )
+        self.ios_template = (
+            TemplateInfo(client, data["ios_template"])
+            if data.get("ios_template")
+            else None
+        )
+
+    def __str__(self) -> str:
+        return f"PassTemplatePair(id='{self.id}', name='{self.name}')"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 class AccessCards:
     def __init__(self, client):
         self._client = client
 
-    def issue(self, **kwargs) -> AccessCard:
-        """Issue a new access card"""
-        response = self._client._post('/v1/key-cards', kwargs)
+    def issue(self, **kwargs) -> Union[AccessCard, UnifiedAccessPass]:
+        """Issue a new access card or unified access pass"""
+        response = self._client._post("/v1/key-cards", kwargs)
+        if "details" in response:
+            return UnifiedAccessPass(self._client, response)
         return AccessCard(self._client, response)
-        
-    def provision(self, **kwargs) -> AccessCard:
+
+    def provision(self, **kwargs) -> Union[AccessCard, UnifiedAccessPass]:
         """Alias for issue() method to maintain backwards compatibility"""
         return self.issue(**kwargs)
 
     def get(self, card_id: str) -> AccessCard:
         """Get details about a specific issued Access Pass"""
-        response = self._client._get(f'/v1/key-cards/{card_id}')
+        response = self._client._get(f"/v1/key-cards/{card_id}")
         return AccessCard(self._client, response)
 
     def update(self, card_id: str, **kwargs) -> AccessCard:
         """Update an existing access card"""
-        response = self._client._patch(f'/v1/key-cards/{card_id}', kwargs)
+        response = self._client._patch(f"/v1/key-cards/{card_id}", kwargs)
         return AccessCard(self._client, response)
 
-    def list(self, template_id: Optional[str] = None, state: Optional[str] = None) -> List[AccessCard]:
+    def list(
+        self, template_id: Optional[str] = None, state: Optional[str] = None
+    ) -> List[AccessCard]:
         """
         List NFC keys provisioned for a particular card template.
-        
+
         Args:
             template_id: The card template ID to list keys for (optional)
             state: Filter keys by state (active, suspended, unlink, deleted)
-            
+
         Returns:
             List of AccessCard objects
         """
         params = {}
         if template_id:
-            params['template_id'] = template_id
+            params["template_id"] = template_id
 
         if state:
-            params['state'] = state
-            
-        response = self._client._get('/v1/key-cards', params=params)
-        return [AccessCard(self._client, item) for item in response.get('keys', [])]
+            params["state"] = state
+
+        response = self._client._get("/v1/key-cards", params=params)
+        return [AccessCard(self._client, item) for item in response.get("keys", [])]
 
     def manage(self, card_id: str, action: str) -> AccessCard:
         """Manage card state (suspend/resume/unlink)"""
-        response = self._client._post(f'/v1/key-cards/{card_id}/{action}', {})
+        response = self._client._post(f"/v1/key-cards/{card_id}/{action}", {})
         return AccessCard(self._client, response)
 
     def suspend(self, card_id: str) -> AccessCard:
         """Suspend an access card"""
-        return self.manage(card_id, 'suspend')
+        return self.manage(card_id, "suspend")
 
     def resume(self, card_id: str) -> AccessCard:
         """Resume a suspended access card"""
-        return self.manage(card_id, 'resume')
+        return self.manage(card_id, "resume")
 
     def unlink(self, card_id: str) -> AccessCard:
         """Unlink an access card"""
-        return self.manage(card_id, 'unlink')
+        return self.manage(card_id, "unlink")
 
     def delete(self, card_id: str) -> AccessCard:
         """Delete an access card"""
-        return self.manage(card_id, 'delete')
+        return self.manage(card_id, "delete")
+
 
 class HIDOrgs:
     def __init__(self, client):
@@ -163,25 +244,23 @@ class HIDOrgs:
         Returns:
             Org object with registration details
         """
-        data = {
-            'email': email,
-            'password': password
-        }
-        response = self._client._post('/v1/console/hid/orgs/activate', data)
+        data = {"email": email, "password": password}
+        response = self._client._post("/v1/console/hid/orgs/activate", data)
         return Org(self._client, response)
 
-    def list(self) -> List['Org']:
+    def list(self) -> List["Org"]:
         """
         List all HID organizations.
 
         Returns:
             List of Org objects
         """
-        response = self._client._get('/v1/console/hid/orgs')
-        return [Org(self._client, org) for org in response.get('orgs', [])]
+        response = self._client._get("/v1/console/hid/orgs")
+        return [Org(self._client, org) for org in response.get("orgs", [])]
 
-    def create(self, name: str, full_address: str, phone: str,
-               first_name: str, last_name: str) -> Org:
+    def create(
+        self, name: str, full_address: str, phone: str, first_name: str, last_name: str
+    ) -> Org:
         """
         Create a new HID organization.
 
@@ -196,19 +275,21 @@ class HIDOrgs:
             Org object with creation details
         """
         data = {
-            'name': name,
-            'full_address': full_address,
-            'phone': phone,
-            'first_name': first_name,
-            'last_name': last_name
+            "name": name,
+            "full_address": full_address,
+            "phone": phone,
+            "first_name": first_name,
+            "last_name": last_name,
         }
-        response = self._client._post('/v1/console/hid/orgs', data)
+        response = self._client._post("/v1/console/hid/orgs", data)
         return Org(self._client, response)
+
 
 class HID:
     def __init__(self, client):
         self._client = client
         self.orgs = HIDOrgs(client)
+
 
 class Console:
     def __init__(self, client):
@@ -217,27 +298,58 @@ class Console:
 
     def create_template(self, **kwargs) -> Template:
         """Create a new card template"""
-        response = self._client._post('/v1/console/card-templates', kwargs)
+        response = self._client._post("/v1/console/card-templates", kwargs)
         return Template(self._client, response)
 
     def update_template(self, template_id: str, **kwargs) -> Template:
         """Update an existing card template"""
-        response = self._client._put(f'/v1/console/card-templates/{template_id}', kwargs)
+        response = self._client._put(
+            f"/v1/console/card-templates/{template_id}", kwargs
+        )
         return Template(self._client, response)
 
     def read_template(self, template_id: str) -> Union[Template, List[Template]]:
         "Read card template by id or list the card template pairs"
-        response = self._client._get(f'/v1/console/card-templates/{template_id}')
-        if 'templates' in response:
-            return [Template(self._client, item) for item in response['templates']]
+        response = self._client._get(f"/v1/console/card-templates/{template_id}")
+        if "templates" in response:
+            return [Template(self._client, item) for item in response["templates"]]
         return Template(self._client, response)
 
     def get_logs(self, template_id: str, **kwargs) -> Dict[str, Any]:
         """Get event logs for a card template"""
-        return self._client._get(f'/v1/console/card-templates/{template_id}/logs', params=kwargs)
+        return self._client._get(
+            f"/v1/console/card-templates/{template_id}/logs", params=kwargs
+        )
+
+    def list_pass_template_pairs(self, **kwargs) -> Dict[str, Any]:
+        """
+        List Pass Template Pairs with pagination support.
+
+        Args:
+            page: Page number for pagination (default: 1)
+            per_page: Number of results per page (default: 50, max: 100)
+
+        Returns:
+            Dict containing pass_template_pairs list and pagination info
+        """
+        response = self._client._get("/v1/console/pass-template-pairs", params=kwargs)
+
+        if "pass_template_pairs" in response:
+            response["pass_template_pairs"] = [
+                PassTemplatePair(self._client, pair)
+                for pair in response["pass_template_pairs"]
+            ]
+
+        return response
+
 
 class AccessGrid:
-    def __init__(self, account_id: str, secret_key: str, base_url: str = 'https://api.accessgrid.com'):
+    def __init__(
+        self,
+        account_id: str,
+        secret_key: str,
+        base_url: str = "https://api.accessgrid.com",
+    ):
         if not account_id:
             raise ValueError("Account ID is required")
         if not secret_key:
@@ -245,8 +357,8 @@ class AccessGrid:
 
         self.account_id = account_id
         self.secret_key = secret_key
-        self.base_url = base_url.rstrip('/')
-        
+        self.base_url = base_url.rstrip("/")
+
         # Initialize API clients
         self.access_cards = AccessCards(self)
         self.console = Console(self)
@@ -255,47 +367,53 @@ class AccessGrid:
         """
         Generate HMAC signature for the payload according to the shared secret scheme:
         SHA256.update(shared_secret + base64.encode(payload)).hexdigest()
-        
-        For requests with no payload (like GET, or actions like suspend/unlink/resume), 
-        caller should provide a payload with {"id": "{resource_id}"}
+
+        For requests with no payload (like GET, or actions like
+        suspend/unlink/resume), caller should provide a payload
+        with {"id": "{resource_id}"}
         """
         # Base64 encode the payload
         payload_bytes = payload.encode()
         encoded_payload = base64.b64encode(payload_bytes)
-        
-        # Create HMAC using the shared secret as the key and the base64 encoded payload as the message
+
+        # Create HMAC using the shared secret as the key
+        # and the base64 encoded payload as the message
         signature = hmac.new(
-            self.secret_key.encode(),
-            encoded_payload,
-            hashlib.sha256
+            self.secret_key.encode(), encoded_payload, hashlib.sha256
         ).hexdigest()
-        
+
         return signature
 
-    def _make_request(self, method: str, endpoint: str, 
-                     data: Optional[Dict] = None, 
-                     params: Optional[Dict] = None) -> Dict[str, Any]:
+    def _make_request(
+        self,
+        method: str,
+        endpoint: str,
+        data: Optional[Dict] = None,
+        params: Optional[Dict] = None,
+    ) -> Dict[str, Any]:
         """Make an HTTP request to the API"""
         url = f"{self.base_url}{endpoint}"
-        
+
         # Extract resource ID from the endpoint if needed for signature
         resource_id = None
-        if method == 'GET' or (method == 'POST' and (not data or data == {})):
-            # Extract the ID from the endpoint - patterns like /resource/{id} or /resource/{id}/action
-            parts = endpoint.strip('/').split('/')
+        if method == "GET" or (method == "POST" and (not data or data == {})):
+            # Extract ID from endpoint patterns like
+            # /resource/{id} or /resource/{id}/action
+            parts = endpoint.strip("/").split("/")
             if len(parts) >= 2:
-                # For actions like unlink/suspend/resume, get the card ID (second to last part)
-                if parts[-1] in ['suspend', 'resume', 'unlink', 'delete']:
+                # For actions like unlink/suspend/resume,
+                # get the card ID (second to last part)
+                if parts[-1] in ["suspend", "resume", "unlink", "delete"]:
                     resource_id = parts[-2]
                 else:
                     # Otherwise, the ID is typically the last part of the path
                     resource_id = parts[-1]
-        
+
         # Special handling for requests with no payload:
         # 1. POST requests with empty body (like unlink/suspend/resume)
         # 2. GET requests
-        if (method == 'POST' and not data) or method == 'GET':
-            # For these requests, use {"id": "card_id"} as the payload for signature generation
+        if (method == "POST" and not data) or method == "GET":
+            # Use {"id": "card_id"} as the signature payload
             if resource_id:
                 payload = json.dumps({"id": resource_id})
             else:
@@ -303,44 +421,40 @@ class AccessGrid:
         else:
             # For normal POST/PUT/PATCH with body, use the actual payload
             payload = json.dumps(data) if data else ""
-        
-        # Generate signature - we don't need to pass resource_id separately since we've already
-        # incorporated it into the payload when needed
+
+        # Generate signature — resource_id is already
+        # incorporated into the payload when needed
         signature = self._generate_signature(payload)
-        
+
         headers = {
-            'X-ACCT-ID': self.account_id,
-            'X-PAYLOAD-SIG': signature,
-            'Content-Type': 'application/json',
-            'User-Agent': f'accessgrid.py @ v{__version__}'
+            "X-ACCT-ID": self.account_id,
+            "X-PAYLOAD-SIG": signature,
+            "Content-Type": "application/json",
+            "User-Agent": f"accessgrid.py @ v{__version__}",
         }
 
-        # For GET requests, we don't need to add sig_payload here anymore 
+        # For GET requests, we don't need to add sig_payload here anymore
         # as it's handled in the request section below
 
         try:
-            # For requests with empty bodies (GET or action endpoints like unlink/suspend/resume),
-            # we need to include the sig_payload parameter
-            if method == 'GET' or (method == 'POST' and not data):
+            # For empty-body requests (GET or actions),
+            # include the sig_payload parameter
+            if method == "GET" or (method == "POST" and not data):
                 if not params:
                     params = {}
                 # Include the ID payload in the query params
                 if resource_id:
                     # The server expects the raw JSON string, not URL-encoded
-                    params['sig_payload'] = json.dumps({"id": resource_id})
-            
+                    params["sig_payload"] = json.dumps({"id": resource_id})
+
             # For POST/PUT/PATCH with empty body, don't include a JSON body
             # as the server uses request.raw_post which would be empty
-            json_data = data if data and method != 'GET' else None
-            
+            json_data = data if data and method != "GET" else None
+
             response = requests.request(
-                method=method,
-                url=url,
-                headers=headers,
-                json=json_data,
-                params=params
+                method=method, url=url, headers=headers, json=json_data, params=params
             )
-            
+
             if response.status_code == 401:
                 raise AuthenticationError("Invalid credentials")
             elif response.status_code == 402:
@@ -348,7 +462,7 @@ class AccessGrid:
             elif not 200 <= response.status_code < 300:
                 print(f"response.status_code: {response.status_code}")
                 error_data = response.json() if response.text else {}
-                error_message = error_data.get('message', response.text)
+                error_message = error_data.get("message", response.text)
                 raise AccessGridError(f"API request failed: {error_message}")
 
             return response.json()
@@ -358,16 +472,16 @@ class AccessGrid:
 
     def _get(self, endpoint: str, params: Optional[Dict] = None) -> Dict[str, Any]:
         """Make a GET request"""
-        return self._make_request('GET', endpoint, params=params)
+        return self._make_request("GET", endpoint, params=params)
 
     def _post(self, endpoint: str, data: Dict) -> Dict[str, Any]:
         """Make a POST request"""
-        return self._make_request('POST', endpoint, data=data)
+        return self._make_request("POST", endpoint, data=data)
 
     def _put(self, endpoint: str, data: Dict) -> Dict[str, Any]:
         """Make a PUT request"""
-        return self._make_request('PUT', endpoint, data=data)
+        return self._make_request("PUT", endpoint, data=data)
 
     def _patch(self, endpoint: str, data: Dict) -> Dict[str, Any]:
         """Make a PATCH request"""
-        return self._make_request('PATCH', endpoint, data=data)
+        return self._make_request("PATCH", endpoint, data=data)
