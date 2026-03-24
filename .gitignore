@@ -59,6 +59,9 @@ sign.py
 sign.pyu
 stid.py
 stidkdf.py
+alg.py
+update_template.py
+keyfile.py
 
 # Coverage and test reports
 .coverage
