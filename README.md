@@ -86,27 +86,24 @@ client.access_cards.delete(card_id="0xc4rd1d")
 
 ```python
 template = client.console.create_template(
-    name="Employee NFC key",
+    name="Employee Access Pass",
     platform="apple",
     use_case="employee_badge",
     protocol="desfire",
     allow_on_multiple_devices=True,
     watch_count=2,
     iphone_count=3,
-    design={
-        "background_color": "#FFFFFF",
-        "label_color": "#000000",
-        "label_secondary_color": "#333333",
-        "background_image": "[image_in_base64_encoded_format]",
-        "logo_image": "[image_in_base64_encoded_format]",
-        "icon_image": "[image_in_base64_encoded_format]"
-    },
-    support_info={
-        "support_url": "https://help.yourcompany.com",
-        "support_phone_number": "+1-555-123-4567",
-        "support_email": "support@yourcompany.com",
-        "privacy_policy_url": "https://yourcompany.com/privacy",
-        "terms_and_conditions_url": "https://yourcompany.com/terms"
+    background_color="#FFFFFF",
+    label_color="#000000",
+    label_secondary_color="#333333",
+    support_url="https://help.yourcompany.com",
+    support_phone_number="+1-555-123-4567",
+    support_email="support@yourcompany.com",
+    privacy_policy_url="https://yourcompany.com/privacy",
+    terms_and_conditions_url="https://yourcompany.com/terms",
+    metadata={
+        "version": "2.1",
+        "approval_status": "approved"
     }
 )
 ```
@@ -115,18 +112,16 @@ template = client.console.create_template(
 
 ```python
 template = client.console.update_template(
-    card_template_id="0xd3adb00b5",
+    template_id="0xd3adb00b5",
     name="Updated Employee NFC key",
     allow_on_multiple_devices=True,
     watch_count=2,
     iphone_count=3,
-    support_info={
-        "support_url": "https://help.yourcompany.com",
-        "support_phone_number": "+1-555-123-4567",
-        "support_email": "support@yourcompany.com",
-        "privacy_policy_url": "https://yourcompany.com/privacy",
-        "terms_and_conditions_url": "https://yourcompany.com/terms"
-    }
+    support_url="https://help.yourcompany.com",
+    support_phone_number="+1-555-123-4567",
+    support_email="support@yourcompany.com",
+    privacy_policy_url="https://yourcompany.com/privacy",
+    terms_and_conditions_url="https://yourcompany.com/terms"
 )
 ```
 
@@ -150,6 +145,73 @@ events = client.console.event_log(
         "event_type": "install"
     }
 )
+```
+
+#### iOS In-App Provisioning Preflight
+
+```python
+response = client.console.ios_preflight(
+    card_template_id="0xt3mp14t3-3x1d",
+    access_pass_ex_id="0xp455-3x1d"
+)
+
+print(f"Provisioning Credential ID: {response.provisioningCredentialIdentifier}")
+print(f"Sharing Instance ID: {response.sharingInstanceIdentifier}")
+print(f"Card Template ID: {response.cardTemplateIdentifier}")
+print(f"Environment ID: {response.environmentIdentifier}")
+```
+
+#### List ledger items
+
+```python
+from datetime import datetime, timezone, timedelta
+
+start_date = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
+end_date = datetime.now(timezone.utc).isoformat()
+
+result = client.console.ledger_items(
+    page=1,
+    per_page=50,
+    start_date=start_date,
+    end_date=end_date
+)
+
+for item in result['ledger_items']:
+    print(f"Amount: {item['amount']}, Kind: {item['kind']}, Date: {item['created_at']}")
+    if item.get('access_pass'):
+        print(f"  Access Pass: {item['access_pass']['ex_id']}")
+        if item['access_pass'].get('pass_template'):
+            print(f"  Card Template: {item['access_pass']['pass_template']['ex_id']}")
+```
+
+### Webhooks
+
+#### Create a webhook
+
+```python
+webhook = client.console.webhooks.create(
+    name='Production',
+    url='https://example.com/webhooks',
+    subscribed_events=['ag.access_pass.issued']
+)
+
+print(f"Webhook created: {webhook.id}")
+print(f"Private key: {webhook.private_key}")
+```
+
+#### List webhooks
+
+```python
+webhooks = client.console.webhooks.list()
+
+for webhook in webhooks:
+    print(f"ID: {webhook.id}, Name: {webhook.name}")
+```
+
+#### Delete a webhook
+
+```python
+client.console.webhooks.delete('abc123')
 ```
 
 ### HID Organizations
@@ -243,3 +305,29 @@ Never expose your `secret_key` in source code. Always use environment variables 
 ## License
 
 MIT License - See LICENSE file for details.
+
+## Feature Matrix
+
+| Endpoint | Method | Supported |
+|---|---|:---:|
+| POST /v1/key-cards | `access_cards.issue()` | Y |
+| GET /v1/key-cards/{id} | `access_cards.get()` | Y |
+| PATCH /v1/key-cards/{id} | `access_cards.update()` | Y |
+| GET /v1/key-cards | `access_cards.list()` | Y |
+| POST /v1/key-cards/{id}/suspend | `access_cards.suspend()` | Y |
+| POST /v1/key-cards/{id}/resume | `access_cards.resume()` | Y |
+| POST /v1/key-cards/{id}/unlink | `access_cards.unlink()` | Y |
+| POST /v1/key-cards/{id}/delete | `access_cards.delete()` | Y |
+| POST /v1/console/card-templates | `console.create_template()` | Y |
+| PUT /v1/console/card-templates/{id} | `console.update_template()` | Y |
+| GET /v1/console/card-templates/{id} | `console.read_template()` | Y |
+| GET /v1/console/card-templates/{id}/logs | `console.get_logs()` / `console.event_log()` | Y |
+| GET /v1/console/pass-template-pairs | `console.list_pass_template_pairs()` | Y |
+| POST /v1/console/card-templates/{id}/ios_preflight | `console.ios_preflight()` | Y |
+| GET /v1/console/ledger-items | `console.ledger_items()` | Y |
+| GET /v1/console/webhooks | `console.webhooks.list()` | Y |
+| POST /v1/console/webhooks | `console.webhooks.create()` | Y |
+| DELETE /v1/console/webhooks/{id} | `console.webhooks.delete()` | Y |
+| POST /v1/console/hid/orgs | `console.hid.orgs.create()` | Y |
+| POST /v1/console/hid/orgs/activate | `console.hid.orgs.activate()` | Y |
+| GET /v1/console/hid/orgs | `console.hid.orgs.list()` | Y |

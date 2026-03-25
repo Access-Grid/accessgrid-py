@@ -23,13 +23,17 @@ from .client import (
     AccessGrid,
     AccessGridError,
     AuthenticationError,
+    IosPreflight,
     Org,
+    PassTemplatePair,
     Template,
+    TemplateInfo,
     UnifiedAccessPass,
+    Webhook,
 )
 
 # Version of the accessgrid package
-__version__ = "0.2.1"
+__version__ = "0.3.0"
 
 # List of public objects that will be exported with "from accessgrid import *"
 __all__ = [
@@ -39,5 +43,9 @@ __all__ = [
     "AccessCard",
     "UnifiedAccessPass",
     "Template",
+    "TemplateInfo",
+    "PassTemplatePair",
+    "IosPreflight",
+    "Webhook",
     "Org",
 ]

@@ -524,3 +524,242 @@ class TestConsoleLogs:
         assert call_args["params"]["start_date"] == "2025-01-01T00:00:00Z"
         assert call_args["params"]["end_date"] == "2025-02-01T00:00:00Z"
         assert call_args["params"]["event_type"] == "install"
+
+    @patch("requests.request")
+    def test_event_log_alias(self, mock_request, client, mock_response):
+        mock_request.return_value = mock_response
+        template_id = "0xd3adb00b5"
+
+        client.console.event_log(
+            card_template_id=template_id, device="mobile"
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert (
+            call_args["url"]
+            == f"{client.base_url}/v1/console/card-templates/{template_id}/logs"
+        )
+        assert call_args["params"]["device"] == "mobile"
+
+
+class TestIosPreflight:
+    @patch("requests.request")
+    def test_ios_preflight(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = '{"provisioningCredentialIdentifier": "pci-123"}'
+        mock_resp.json.return_value = {
+            "provisioningCredentialIdentifier": "pci-123",
+            "sharingInstanceIdentifier": "si-456",
+            "cardTemplateIdentifier": "ct-789",
+            "environmentIdentifier": "env-abc",
+        }
+        mock_request.return_value = mock_resp
+
+        result = client.console.ios_preflight(
+            card_template_id="0xt3mp14t3",
+            access_pass_ex_id="0xp455",
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "POST"
+        assert (
+            call_args["url"]
+            == f"{client.base_url}/v1/console/card-templates/0xt3mp14t3/ios_preflight"
+        )
+        assert call_args["json"]["access_pass_ex_id"] == "0xp455"
+        assert result.provisioningCredentialIdentifier == "pci-123"
+        assert result.sharingInstanceIdentifier == "si-456"
+        assert result.cardTemplateIdentifier == "ct-789"
+        assert result.environmentIdentifier == "env-abc"
+
+
+class TestLedgerItems:
+    @patch("requests.request")
+    def test_ledger_items(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = '{"ledger_items": []}'
+        mock_resp.json.return_value = {
+            "ledger_items": [
+                {
+                    "id": "li-1",
+                    "amount": 100,
+                    "kind": "ap_debit",
+                    "event": "ag.access_pass.issued",
+                    "created_at": "2025-01-15T10:00:00Z",
+                    "metadata": {},
+                    "access_pass": {
+                        "id": "ap-1",
+                        "ex_id": "ap-1",
+                        "full_name": "John Doe",
+                        "state": "active",
+                        "pass_template": {
+                            "id": "tmpl-1",
+                            "ex_id": "tmpl-1",
+                            "name": "Employee Badge",
+                            "protocol": "desfire",
+                            "platform": "apple",
+                            "use_case": "employee_badge",
+                        },
+                    },
+                }
+            ],
+            "pagination": {
+                "current_page": 1,
+                "per_page": 50,
+                "total_pages": 1,
+                "total_count": 1,
+            },
+        }
+        mock_request.return_value = mock_resp
+
+        result = client.console.ledger_items(
+            page=1, per_page=50, start_date="2025-01-01T00:00:00Z"
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert call_args["url"] == f"{client.base_url}/v1/console/ledger-items"
+        assert call_args["params"]["page"] == 1
+        assert call_args["params"]["per_page"] == 50
+        assert call_args["params"]["start_date"] == "2025-01-01T00:00:00Z"
+
+        items = result["ledger_items"]
+        assert len(items) == 1
+        assert items[0]["amount"] == 100
+        assert items[0]["kind"] == "ap_debit"
+        assert items[0]["access_pass"]["full_name"] == "John Doe"
+        assert items[0]["access_pass"]["pass_template"]["name"] == "Employee Badge"
+        assert result["pagination"]["total_count"] == 1
+
+
+class TestWebhooks:
+    @patch("requests.request")
+    def test_create_webhook(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 201
+        mock_resp.text = '{"id": "wh-1"}'
+        mock_resp.json.return_value = {
+            "id": "wh-1",
+            "name": "Production",
+            "url": "https://example.com/webhooks",
+            "auth_method": "bearer_token",
+            "subscribed_events": ["ag.access_pass.issued"],
+            "created_at": "2025-01-15T10:00:00Z",
+            "private_key": "pk-secret-123",
+        }
+        mock_request.return_value = mock_resp
+
+        webhook = client.console.webhooks.create(
+            name="Production",
+            url="https://example.com/webhooks",
+            subscribed_events=["ag.access_pass.issued"],
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "POST"
+        assert call_args["url"] == f"{client.base_url}/v1/console/webhooks"
+        assert call_args["json"]["name"] == "Production"
+        assert call_args["json"]["url"] == "https://example.com/webhooks"
+        assert call_args["json"]["subscribed_events"] == ["ag.access_pass.issued"]
+        assert webhook.id == "wh-1"
+        assert webhook.name == "Production"
+        assert webhook.private_key == "pk-secret-123"
+        expected_str = (
+            "Webhook(id='wh-1', name='Production', "
+            "url='https://example.com/webhooks')"
+        )
+        assert str(webhook) == expected_str
+
+    @patch("requests.request")
+    def test_list_webhooks(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = '{"webhooks": []}'
+        mock_resp.json.return_value = {
+            "webhooks": [
+                {
+                    "id": "wh-1",
+                    "name": "Production",
+                    "url": "https://example.com/webhooks",
+                    "auth_method": "bearer_token",
+                    "subscribed_events": ["ag.access_pass.issued"],
+                    "created_at": "2025-01-15T10:00:00Z",
+                },
+                {
+                    "id": "wh-2",
+                    "name": "Staging",
+                    "url": "https://staging.example.com/webhooks",
+                    "auth_method": "mtls",
+                    "subscribed_events": ["ag.access_pass.issued"],
+                    "created_at": "2025-02-01T12:00:00Z",
+                    "cert_expires_at": "2026-02-01T12:00:00Z",
+                },
+            ]
+        }
+        mock_request.return_value = mock_resp
+
+        webhooks = client.console.webhooks.list()
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert call_args["url"] == f"{client.base_url}/v1/console/webhooks"
+        assert len(webhooks) == 2
+        assert webhooks[0].id == "wh-1"
+        assert webhooks[0].name == "Production"
+        assert webhooks[1].id == "wh-2"
+        assert webhooks[1].cert_expires_at == "2026-02-01T12:00:00Z"
+
+    @patch("requests.request")
+    def test_delete_webhook(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 204
+        mock_resp.text = ""
+        mock_request.return_value = mock_resp
+
+        client.console.webhooks.delete("wh-1")
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "DELETE"
+        assert call_args["url"] == f"{client.base_url}/v1/console/webhooks/wh-1"
+
+
+class TestPassTemplatePairDictAccess:
+    def test_bracket_access(self):
+        from accessgrid.client import PassTemplatePair
+
+        data = {
+            "id": "pair-1",
+            "name": "Employee Badge",
+            "created_at": "2025-01-15T10:00:00Z",
+            "android_template": {
+                "id": "tmpl-android-1",
+                "name": "Android Badge",
+                "platform": "google",
+            },
+            "ios_template": None,
+        }
+        pair = PassTemplatePair(None, data)
+
+        assert pair["id"] == "pair-1"
+        assert pair["name"] == "Employee Badge"
+        assert pair["android_template"].id == "tmpl-android-1"
+        assert pair["android_template"]["name"] == "Android Badge"
+        assert pair["ios_template"] is None
+
+    def test_get_method(self):
+        from accessgrid.client import PassTemplatePair
+
+        data = {
+            "id": "pair-1",
+            "name": "Test",
+            "created_at": "2025-01-15T10:00:00Z",
+            "android_template": None,
+            "ios_template": None,
+        }
+        pair = PassTemplatePair(None, data)
+
+        assert pair.get("id") == "pair-1"
+        assert pair.get("missing", "default") == "default"
