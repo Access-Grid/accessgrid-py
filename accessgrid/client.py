@@ -354,8 +354,13 @@ class Webhooks:
     def __init__(self, client):
         self._client = client
 
-    def create(self, name: str, url: str, subscribed_events: List[str],
-               auth_method: str = "bearer_token") -> Webhook:
+    def create(
+        self,
+        name: str,
+        url: str,
+        subscribed_events: List[str],
+        auth_method: str = "bearer_token",
+    ) -> Webhook:
         """Create a new webhook."""
         data = {
             "name": name,
@@ -369,9 +374,7 @@ class Webhooks:
     def list(self, **kwargs) -> List[Webhook]:
         """List all webhooks."""
         response = self._client._get("/v1/console/webhooks", params=kwargs)
-        return [
-            Webhook(self._client, wh) for wh in response.get("webhooks", [])
-        ]
+        return [Webhook(self._client, wh) for wh in response.get("webhooks", [])]
 
     def delete(self, webhook_id: str) -> None:
         """Delete a webhook by ID."""
@@ -413,8 +416,9 @@ class Console:
         """Alias for get_logs. Get event logs for a card template."""
         return self.get_logs(card_template_id, **kwargs)
 
-    def ios_preflight(self, card_template_id: str,
-                      access_pass_ex_id: str) -> IosPreflight:
+    def ios_preflight(
+        self, card_template_id: str, access_pass_ex_id: str
+    ) -> IosPreflight:
         """Run iOS In-App Provisioning preflight for an access pass."""
         data = {"access_pass_ex_id": access_pass_ex_id}
         response = self._client._post(
@@ -512,7 +516,9 @@ class AccessGrid:
 
         # Extract resource ID from the endpoint if needed for signature
         resource_id = None
-        if method in ("GET", "DELETE") or (method == "POST" and (not data or data == {})):
+        if method in ("GET", "DELETE") or (
+            method == "POST" and (not data or data == {})
+        ):
             # Extract ID from endpoint patterns like
             # /resource/{id} or /resource/{id}/action
             parts = endpoint.strip("/").split("/")

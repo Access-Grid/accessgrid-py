@@ -530,9 +530,7 @@ class TestConsoleLogs:
         mock_request.return_value = mock_response
         template_id = "0xd3adb00b5"
 
-        client.console.event_log(
-            card_template_id=template_id, device="mobile"
-        )
+        client.console.event_log(card_template_id=template_id, device="mobile")
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
