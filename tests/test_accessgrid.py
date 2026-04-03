@@ -970,8 +970,18 @@ class TestCredentialProfiles:
             "created_at": "2025-01-15T10:00:00Z",
             "card_storage": "4K",
             "keys": [
-                {"ex_id": "00", "label": "Master Key", "keys_diversified": False, "source_key_index": None},
-                {"ex_id": "01", "label": "Read Key", "keys_diversified": False, "source_key_index": None},
+                {
+                    "ex_id": "00",
+                    "label": "Master Key",
+                    "keys_diversified": False,
+                    "source_key_index": None,
+                },
+                {
+                    "ex_id": "01",
+                    "label": "Read Key",
+                    "keys_diversified": False,
+                    "source_key_index": None,
+                },
             ],
             "files": [],
         }
@@ -999,12 +1009,12 @@ class TestCredentialProfiles:
 
 class TestUpdateTemplateKeywordArg:
     @patch("requests.request")
-    def test_update_template_with_keyword_arg(self, mock_request, client, mock_response):
+    def test_update_template_with_keyword_arg(
+        self, mock_request, client, mock_response
+    ):
         mock_request.return_value = mock_response
 
-        client.console.update_template(
-            card_template_id="0xd3adb00b5", name="New Name"
-        )
+        client.console.update_template(card_template_id="0xd3adb00b5", name="New Name")
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "PUT"

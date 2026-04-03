@@ -194,8 +194,7 @@ class LandingPage:
 
     def __str__(self) -> str:
         return (
-            f"LandingPage(id='{self.id}', "
-            f"name='{self.name}', kind='{self.kind}')"
+            f"LandingPage(id='{self.id}', " f"name='{self.name}', kind='{self.kind}')"
         )
 
     def __repr__(self) -> str:
@@ -434,7 +433,11 @@ class CredentialProfiles:
         self._client = client
 
     def create(
-        self, name: str, app_name: str = "KEY-ID-main", keys: Optional[List[Dict]] = None, file_id: Optional[str] = None
+        self,
+        name: str,
+        app_name: str = "KEY-ID-main",
+        keys: Optional[List[Dict]] = None,
+        file_id: Optional[str] = None,
     ) -> CredentialProfile:
         """
         Create a new credential profile.
@@ -442,7 +445,8 @@ class CredentialProfiles:
         Args:
             name: Profile name
             app_name: Application name (default: KEY-ID-main)
-            keys: List of key dicts, each with 'value' and optional 'keys_diversified', 'source_key_index'
+            keys: List of key dicts with 'value' and optional
+                'keys_diversified', 'source_key_index'
             file_id: Optional file ID (default: "00")
 
         Returns:
@@ -464,7 +468,11 @@ class CredentialProfiles:
             List of CredentialProfile objects
         """
         response = self._client._get("/v1/console/credential-profiles")
-        profiles = response if isinstance(response, list) else response.get("credential_profiles", [])
+        profiles = (
+            response
+            if isinstance(response, list)
+            else response.get("credential_profiles", [])
+        )
         return [CredentialProfile(self._client, p) for p in profiles]
 
 
@@ -532,7 +540,11 @@ class Console:
     def list_landing_pages(self) -> List[LandingPage]:
         """List all landing pages."""
         response = self._client._get("/v1/console/landing-pages")
-        pages = response if isinstance(response, list) else response.get("landing_pages", [])
+        pages = (
+            response
+            if isinstance(response, list)
+            else response.get("landing_pages", [])
+        )
         return [LandingPage(self._client, lp) for lp in pages]
 
     def create_landing_page(self, **kwargs) -> LandingPage:
