@@ -29,13 +29,26 @@ client = AccessGrid(account_id, secret_key)
 card = client.access_cards.provision(
     card_template_id="0xd3adb00b5",
     employee_id="123456789",
+    tag_id="DDEADB33FB00B5",
+    allow_on_multiple_devices=True,
     full_name="Employee name",
     email="employee@yourwebsite.com",
     phone_number="+19547212241",
     classification="full_time",
+    department="Engineering",
+    location="San Francisco",
+    site_name="HQ Building A",
+    workstation="4F-207",
+    mail_stop="MS-401",
+    company_address="123 Main St, San Francisco, CA 94105",
     start_date="2025-01-31T22:46:25.601Z",
     expiration_date="2025-04-30T22:46:25.601Z",
-    employee_photo="[image_in_base64_encoded_format]"
+    employee_photo="[image_in_base64_encoded_format]",
+    title="Engineering Manager",
+    metadata={
+        "department": "engineering",
+        "badge_type": "contractor"
+    }
 )
 ```
 
@@ -47,8 +60,15 @@ card = client.access_cards.update(
     employee_id="987654321",
     full_name="Updated Employee Name",
     classification="contractor",
+    department="Marketing",
+    location="New York",
+    site_name="NYC Office",
+    workstation="2F-105",
+    mail_stop="MS-200",
+    company_address="456 Broadway, New York, NY 10013",
     expiration_date="2025-02-22T21:04:03.664Z",
-    employee_photo="[image_in_base64_encoded_format]"
+    employee_photo="[image_in_base64_encoded_format]",
+    title="Senior Developer"
 )
 ```
 
@@ -112,7 +132,7 @@ template = client.console.create_template(
 
 ```python
 template = client.console.update_template(
-    template_id="0xd3adb00b5",
+    card_template_id="0xd3adb00b5",
     name="Updated Employee NFC key",
     allow_on_multiple_devices=True,
     watch_count=2,
@@ -182,6 +202,76 @@ for item in result['ledger_items']:
         print(f"  Access Pass: {item['access_pass']['ex_id']}")
         if item['access_pass'].get('pass_template'):
             print(f"  Card Template: {item['access_pass']['pass_template']['ex_id']}")
+```
+
+### Landing Pages
+
+#### List landing pages
+
+```python
+landing_pages = client.console.list_landing_pages()
+
+for page in landing_pages:
+    print(f"ID: {page.id}, Name: {page.name}, Kind: {page.kind}")
+    print(f"  Password Protected: {page.password_protected}")
+    if page.logo_url:
+        print(f"  Logo URL: {page.logo_url}")
+```
+
+#### Create a landing page
+
+```python
+landing_page = client.console.create_landing_page(
+    name="Miami Office Access Pass",
+    kind="universal",
+    additional_text="Welcome to the Miami Office",
+    bg_color="#f1f5f9",
+    allow_immediate_download=True
+)
+
+print(f"Landing page created: {landing_page.id}")
+print(f"Name: {landing_page.name}, Kind: {landing_page.kind}")
+```
+
+#### Update a landing page
+
+```python
+landing_page = client.console.update_landing_page(
+    landing_page_id="0xlandingpage1d",
+    name="Updated Miami Office Access Pass",
+    additional_text="Welcome! Tap below to get your access pass.",
+    bg_color="#e2e8f0"
+)
+
+print(f"Landing page updated: {landing_page.id}")
+print(f"Name: {landing_page.name}")
+```
+
+### Credential Profiles
+
+#### List credential profiles
+
+```python
+profiles = client.console.credential_profiles.list()
+
+for profile in profiles:
+    print(f"ID: {profile.id}, Name: {profile.name}, AID: {profile.aid}")
+```
+
+#### Create a credential profile
+
+```python
+profile = client.console.credential_profiles.create(
+    name='Main Office Profile',
+    app_name='KEY-ID-main',
+    keys=[
+        {'value': 'your_32_char_hex_master_key_here'},
+        {'value': 'your_32_char_hex__read_key__here'}
+    ]
+)
+
+print(f"Profile created: {profile.id}")
+print(f"AID: {profile.aid}")
 ```
 
 ### Webhooks
@@ -325,6 +415,11 @@ MIT License - See LICENSE file for details.
 | GET /v1/console/pass-template-pairs | `console.list_pass_template_pairs()` | Y |
 | POST /v1/console/card-templates/{id}/ios_preflight | `console.ios_preflight()` | Y |
 | GET /v1/console/ledger-items | `console.ledger_items()` | Y |
+| GET /v1/console/landing-pages | `console.list_landing_pages()` | Y |
+| POST /v1/console/landing-pages | `console.create_landing_page()` | Y |
+| PUT /v1/console/landing-pages/{id} | `console.update_landing_page()` | Y |
+| GET /v1/console/credential-profiles | `console.credential_profiles.list()` | Y |
+| POST /v1/console/credential-profiles | `console.credential_profiles.create()` | Y |
 | GET /v1/console/webhooks | `console.webhooks.list()` | Y |
 | POST /v1/console/webhooks | `console.webhooks.create()` | Y |
 | DELETE /v1/console/webhooks/{id} | `console.webhooks.delete()` | Y |
