@@ -995,3 +995,73 @@ class TestCredentialProfiles:
         assert profile.id == "cp-1"
         assert profile.aid == "F0394148000001"
         assert len(profile.keys) == 2
+
+
+class TestUpdateTemplateKeywordArg:
+    @patch("requests.request")
+    def test_update_template_with_keyword_arg(self, mock_request, client, mock_response):
+        mock_request.return_value = mock_response
+
+        client.console.update_template(
+            card_template_id="0xd3adb00b5", name="New Name"
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "PUT"
+        assert (
+            call_args["url"]
+            == f"{client.base_url}/v1/console/card-templates/0xd3adb00b5"
+        )
+        assert call_args["json"]["name"] == "New Name"
+
+    @patch("requests.request")
+    def test_read_template_with_keyword_arg(self, mock_request, client, mock_response):
+        mock_request.return_value = mock_response
+
+        client.console.read_template(card_template_id="0xd3adb00b5")
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert (
+            call_args["url"]
+            == f"{client.base_url}/v1/console/card-templates/0xd3adb00b5"
+        )
+
+
+class TestHIDOrgsListBackwardCompat:
+    @patch("requests.request")
+    def test_list_orgs_handles_wrapped_response(self, mock_request, client):
+        """If the API ever wraps the response in {"orgs": [...]}, it still works."""
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "orgs": [
+                {"id": "org-1", "name": "Acme Corp", "status": "active"},
+            ]
+        }
+        mock_request.return_value = mock_resp
+
+        orgs = client.console.hid.orgs.list()
+
+        assert len(orgs) == 1
+        assert orgs[0].id == "org-1"
+
+
+class TestAccessCardFieldDefaults:
+    def test_missing_fields_default_to_none(self):
+        from accessgrid.client import AccessCard
+
+        card = AccessCard(None, {"id": "card-1", "state": "active"})
+
+        assert card.organization_name is None
+        assert card.temporary is None
+        assert card.employee_id is None
+        assert card.created_at is None
+        assert card.metadata == {}
+
+    def test_template_missing_metadata_defaults_to_empty(self):
+        from accessgrid.client import Template
+
+        tmpl = Template(None, {"id": "t-1", "name": "Test"})
+
+        assert tmpl.metadata == {}
