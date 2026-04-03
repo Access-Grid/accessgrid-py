@@ -35,12 +35,16 @@ class AccessCard:
         self.details = data.get("details")
         self.state = data.get("state")
         self.full_name = data.get("full_name")
+        self.employee_id = data.get("employee_id")
         self.expiration_date = data.get("expiration_date")
         self.card_template_id = data.get("card_template_id")
         self.card_number = data.get("card_number")
         self.site_code = data.get("site_code")
         self.file_data = data.get("file_data")
         self.direct_install_url = data.get("direct_install_url")
+        self.organization_name = data.get("organization_name")
+        self.temporary = data.get("temporary")
+        self.created_at = data.get("created_at")
         self.devices = data.get("devices", [])
         self.metadata = data.get("metadata", {})
 
@@ -91,6 +95,7 @@ class Template:
         self.support_settings = data.get("support_settings")
         self.terms_settings = data.get("terms_settings")
         self.style_settings = data.get("style_settings")
+        self.metadata = data.get("metadata", {})
 
 
 class Org:
@@ -172,6 +177,47 @@ class PassTemplatePair:
 
     def __str__(self) -> str:
         return f"PassTemplatePair(id='{self.id}', name='{self.name}')"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class LandingPage:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.name = data.get("name")
+        self.created_at = data.get("created_at")
+        self.kind = data.get("kind")
+        self.password_protected = data.get("password_protected")
+        self.logo_url = data.get("logo_url")
+
+    def __str__(self) -> str:
+        return (
+            f"LandingPage(id='{self.id}', " f"name='{self.name}', kind='{self.kind}')"
+        )
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+
+class CredentialProfile:
+    def __init__(self, client, data: Dict[str, Any]):
+        self._client = client
+        self.id = data.get("id")
+        self.aid = data.get("aid")
+        self.name = data.get("name")
+        self.apple_id = data.get("apple_id")
+        self.created_at = data.get("created_at")
+        self.card_storage = data.get("card_storage")
+        self.keys = data.get("keys", [])
+        self.files = data.get("files", [])
+
+    def __str__(self) -> str:
+        return (
+            f"CredentialProfile(id='{self.id}', "
+            f"name='{self.name}', aid='{self.aid}')"
+        )
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -315,7 +361,8 @@ class HIDOrgs:
             List of Org objects
         """
         response = self._client._get("/v1/console/hid/orgs")
-        return [Org(self._client, org) for org in response.get("orgs", [])]
+        orgs = response if isinstance(response, list) else response.get("orgs", [])
+        return [Org(self._client, org) for org in orgs]
 
     def create(
         self, name: str, full_address: str, phone: str, first_name: str, last_name: str
@@ -381,27 +428,76 @@ class Webhooks:
         self._client._delete(f"/v1/console/webhooks/{webhook_id}")
 
 
+class CredentialProfiles:
+    def __init__(self, client):
+        self._client = client
+
+    def create(
+        self,
+        name: str,
+        app_name: str = "KEY-ID-main",
+        keys: Optional[List[Dict]] = None,
+        file_id: Optional[str] = None,
+    ) -> CredentialProfile:
+        """
+        Create a new credential profile.
+
+        Args:
+            name: Profile name
+            app_name: Application name (default: KEY-ID-main)
+            keys: List of key dicts with 'value' and optional
+                'keys_diversified', 'source_key_index'
+            file_id: Optional file ID (default: "00")
+
+        Returns:
+            CredentialProfile object
+        """
+        data: Dict[str, Any] = {"name": name, "app_name": app_name}
+        if keys is not None:
+            data["keys"] = keys
+        if file_id is not None:
+            data["file_id"] = file_id
+        response = self._client._post("/v1/console/credential-profiles", data)
+        return CredentialProfile(self._client, response)
+
+    def list(self) -> List[CredentialProfile]:
+        """
+        List all credential profiles.
+
+        Returns:
+            List of CredentialProfile objects
+        """
+        response = self._client._get("/v1/console/credential-profiles")
+        profiles = (
+            response
+            if isinstance(response, list)
+            else response.get("credential_profiles", [])
+        )
+        return [CredentialProfile(self._client, p) for p in profiles]
+
+
 class Console:
     def __init__(self, client):
         self._client = client
         self.hid = HID(client)
         self.webhooks = Webhooks(client)
+        self.credential_profiles = CredentialProfiles(client)
 
     def create_template(self, **kwargs) -> Template:
         """Create a new card template"""
         response = self._client._post("/v1/console/card-templates", kwargs)
         return Template(self._client, response)
 
-    def update_template(self, template_id: str, **kwargs) -> Template:
+    def update_template(self, card_template_id: str, **kwargs) -> Template:
         """Update an existing card template"""
         response = self._client._put(
-            f"/v1/console/card-templates/{template_id}", kwargs
+            f"/v1/console/card-templates/{card_template_id}", kwargs
         )
         return Template(self._client, response)
 
-    def read_template(self, template_id: str) -> Union[Template, List[Template]]:
+    def read_template(self, card_template_id: str) -> Union[Template, List[Template]]:
         "Read card template by id or list the card template pairs"
-        response = self._client._get(f"/v1/console/card-templates/{template_id}")
+        response = self._client._get(f"/v1/console/card-templates/{card_template_id}")
         if "templates" in response:
             return [Template(self._client, item) for item in response["templates"]]
         return Template(self._client, response)
@@ -440,6 +536,58 @@ class Console:
             Dict containing ledger_items list and pagination info
         """
         return self._client._get("/v1/console/ledger-items", params=kwargs)
+
+    def list_landing_pages(self) -> List[LandingPage]:
+        """List all landing pages."""
+        response = self._client._get("/v1/console/landing-pages")
+        pages = (
+            response
+            if isinstance(response, list)
+            else response.get("landing_pages", [])
+        )
+        return [LandingPage(self._client, lp) for lp in pages]
+
+    def create_landing_page(self, **kwargs) -> LandingPage:
+        """
+        Create a new landing page.
+
+        Args:
+            name: Landing page name
+            kind: Landing page kind (e.g. 'universal')
+            additional_text: Optional text to display
+            bg_color: Background color hex string
+            allow_immediate_download: Whether to allow immediate download
+            password: Optional password protection
+            is_2fa_enabled: Whether 2FA is enabled
+            logo: Optional base64-encoded logo image
+
+        Returns:
+            LandingPage object
+        """
+        response = self._client._post("/v1/console/landing-pages", kwargs)
+        return LandingPage(self._client, response)
+
+    def update_landing_page(self, landing_page_id: str, **kwargs) -> LandingPage:
+        """
+        Update an existing landing page.
+
+        Args:
+            landing_page_id: The landing page ID
+            name: Updated name
+            additional_text: Updated text
+            bg_color: Updated background color
+            allow_immediate_download: Updated download setting
+            password: Updated password
+            is_2fa_enabled: Updated 2FA setting
+            logo: Updated base64-encoded logo image
+
+        Returns:
+            LandingPage object
+        """
+        response = self._client._put(
+            f"/v1/console/landing-pages/{landing_page_id}", kwargs
+        )
+        return LandingPage(self._client, response)
 
     def list_pass_template_pairs(self, **kwargs) -> Dict[str, Any]:
         """

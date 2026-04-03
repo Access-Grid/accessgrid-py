@@ -315,7 +315,7 @@ class TestConsole:
     @patch("requests.request")
     def test_update_template(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
-        template_id = "0xd3adb00b5"
+        card_template_id = "0xd3adb00b5"
         update_params = {
             "name": "Updated Template",
             "allow_on_multiple_devices": False,
@@ -323,29 +323,45 @@ class TestConsole:
             "iphone_count": 2,
         }
 
-        client.console.update_template(template_id, **update_params)
+        client.console.update_template(card_template_id, **update_params)
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "PUT"
         assert (
             call_args["url"]
-            == f"{client.base_url}/v1/console/card-templates/{template_id}"
+            == f"{client.base_url}/v1/console/card-templates/{card_template_id}"
         )
         assert call_args["json"] == update_params
 
     @patch("requests.request")
     def test_read_template(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
-        template_id = "0xd3adb00b5"
+        card_template_id = "0xd3adb00b5"
 
-        client.console.read_template(template_id)
+        client.console.read_template(card_template_id)
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
         assert (
             call_args["url"]
-            == f"{client.base_url}/v1/console/card-templates/{template_id}"
+            == f"{client.base_url}/v1/console/card-templates/{card_template_id}"
         )
+
+    @patch("requests.request")
+    def test_read_template_includes_metadata(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "id": "tmpl-1",
+            "name": "Test",
+            "platform": "apple",
+            "metadata": {"version": "2.1"},
+        }
+        mock_request.return_value = mock_resp
+
+        template = client.console.read_template("tmpl-1")
+
+        assert template.metadata == {"version": "2.1"}
 
     @patch("requests.request")
     def test_list_pass_template_pairs(self, mock_request, client):
@@ -481,12 +497,10 @@ class TestHIDOrgs:
     def test_list_orgs(self, mock_request, client):
         mock_resp = Mock()
         mock_resp.status_code = 200
-        mock_resp.json.return_value = {
-            "orgs": [
-                {"id": "org-1", "name": "Acme Corp", "status": "active"},
-                {"id": "org-2", "name": "Globex", "status": "pending"},
-            ]
-        }
+        mock_resp.json.return_value = [
+            {"id": "org-1", "name": "Acme Corp", "status": "active"},
+            {"id": "org-2", "name": "Globex", "status": "pending"},
+        ]
         mock_request.return_value = mock_resp
 
         orgs = client.console.hid.orgs.list()
@@ -761,3 +775,303 @@ class TestPassTemplatePairDictAccess:
 
         assert pair.get("id") == "pair-1"
         assert pair.get("missing", "default") == "default"
+
+
+class TestAccessCardFields:
+    @patch("requests.request")
+    def test_get_card_includes_new_fields(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "id": "card-123",
+            "full_name": "John Doe",
+            "employee_id": "emp-456",
+            "state": "active",
+            "install_url": "https://example.com/install/card-123",
+            "card_template_id": "tmpl-456",
+            "expiration_date": "2025-12-31",
+            "organization_name": "Acme Corp",
+            "temporary": False,
+            "created_at": "2025-01-15T10:00:00Z",
+            "metadata": {"dept": "eng"},
+        }
+        mock_request.return_value = mock_resp
+
+        card = client.access_cards.get("card-123")
+
+        assert card.organization_name == "Acme Corp"
+        assert card.temporary is False
+        assert card.employee_id == "emp-456"
+        assert card.created_at == "2025-01-15T10:00:00Z"
+        assert card.metadata == {"dept": "eng"}
+
+
+class TestLandingPages:
+    @patch("requests.request")
+    def test_list_landing_pages(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = [
+            {
+                "id": "lp-1",
+                "name": "Miami Office",
+                "created_at": "2025-01-15T10:00:00Z",
+                "kind": "universal",
+                "password_protected": False,
+                "logo_url": None,
+            },
+            {
+                "id": "lp-2",
+                "name": "NYC Office",
+                "created_at": "2025-02-01T12:00:00Z",
+                "kind": "universal",
+                "password_protected": True,
+                "logo_url": "https://example.com/logo.png",
+            },
+        ]
+        mock_request.return_value = mock_resp
+
+        pages = client.console.list_landing_pages()
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert call_args["url"] == f"{client.base_url}/v1/console/landing-pages"
+        assert len(pages) == 2
+        assert pages[0].id == "lp-1"
+        assert pages[0].name == "Miami Office"
+        assert pages[0].kind == "universal"
+        assert pages[0].password_protected is False
+        assert pages[1].logo_url == "https://example.com/logo.png"
+        expected_str = "LandingPage(id='lp-1', name='Miami Office', kind='universal')"
+        assert str(pages[0]) == expected_str
+        assert repr(pages[0]) == expected_str
+
+    @patch("requests.request")
+    def test_create_landing_page(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 201
+        mock_resp.text = '{"id": "lp-1"}'
+        mock_resp.json.return_value = {
+            "id": "lp-1",
+            "name": "Miami Office",
+            "created_at": "2025-01-15T10:00:00Z",
+            "kind": "universal",
+            "password_protected": False,
+            "logo_url": None,
+        }
+        mock_request.return_value = mock_resp
+
+        page = client.console.create_landing_page(
+            name="Miami Office",
+            kind="universal",
+            additional_text="Welcome",
+            bg_color="#f1f5f9",
+            allow_immediate_download=True,
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "POST"
+        assert call_args["url"] == f"{client.base_url}/v1/console/landing-pages"
+        assert call_args["json"]["name"] == "Miami Office"
+        assert call_args["json"]["kind"] == "universal"
+        assert call_args["json"]["bg_color"] == "#f1f5f9"
+        assert page.id == "lp-1"
+        assert page.name == "Miami Office"
+
+    @patch("requests.request")
+    def test_update_landing_page(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.text = '{"id": "lp-1"}'
+        mock_resp.json.return_value = {
+            "id": "lp-1",
+            "name": "Updated Miami Office",
+            "created_at": "2025-01-15T10:00:00Z",
+            "kind": "universal",
+            "password_protected": False,
+            "logo_url": None,
+        }
+        mock_request.return_value = mock_resp
+
+        page = client.console.update_landing_page(
+            landing_page_id="lp-1",
+            name="Updated Miami Office",
+            bg_color="#e2e8f0",
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "PUT"
+        assert call_args["url"] == f"{client.base_url}/v1/console/landing-pages/lp-1"
+        assert call_args["json"]["name"] == "Updated Miami Office"
+        assert page.name == "Updated Miami Office"
+
+
+class TestCredentialProfiles:
+    @patch("requests.request")
+    def test_list_credential_profiles(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = [
+            {
+                "id": "cp-1",
+                "aid": "F0394148000001",
+                "name": "Main Office",
+                "apple_id": None,
+                "created_at": "2025-01-15T10:00:00Z",
+                "card_storage": "4K",
+                "keys": [
+                    {
+                        "ex_id": "00",
+                        "label": "Master Key",
+                        "keys_diversified": False,
+                        "source_key_index": None,
+                    }
+                ],
+                "files": [
+                    {
+                        "ex_id": "00",
+                        "file_type": "standard",
+                        "file_size": None,
+                        "communication_settings": "encrypted_with_mac",
+                        "read_rights": "read",
+                        "write_rights": "master",
+                        "read_write_rights": "master",
+                        "change_rights": "no-keys",
+                    }
+                ],
+            }
+        ]
+        mock_request.return_value = mock_resp
+
+        profiles = client.console.credential_profiles.list()
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert call_args["url"] == f"{client.base_url}/v1/console/credential-profiles"
+        assert len(profiles) == 1
+        assert profiles[0].id == "cp-1"
+        assert profiles[0].aid == "F0394148000001"
+        assert profiles[0].name == "Main Office"
+        assert len(profiles[0].keys) == 1
+        assert len(profiles[0].files) == 1
+        expected_str = "CredentialProfile(id='cp-1', name='Main Office', aid='F0394148000001')"  # noqa: E501
+        assert str(profiles[0]) == expected_str
+
+    @patch("requests.request")
+    def test_create_credential_profile(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 201
+        mock_resp.text = '{"id": "cp-1"}'
+        mock_resp.json.return_value = {
+            "id": "cp-1",
+            "aid": "F0394148000001",
+            "name": "Main Office Profile",
+            "apple_id": None,
+            "created_at": "2025-01-15T10:00:00Z",
+            "card_storage": "4K",
+            "keys": [
+                {
+                    "ex_id": "00",
+                    "label": "Master Key",
+                    "keys_diversified": False,
+                    "source_key_index": None,
+                },
+                {
+                    "ex_id": "01",
+                    "label": "Read Key",
+                    "keys_diversified": False,
+                    "source_key_index": None,
+                },
+            ],
+            "files": [],
+        }
+        mock_request.return_value = mock_resp
+
+        profile = client.console.credential_profiles.create(
+            name="Main Office Profile",
+            app_name="KEY-ID-main",
+            keys=[
+                {"value": "00112233445566778899AABBCCDDEEFF"},
+                {"value": "FFEEDDCCBBAA99887766554433221100"},
+            ],
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "POST"
+        assert call_args["url"] == f"{client.base_url}/v1/console/credential-profiles"
+        assert call_args["json"]["name"] == "Main Office Profile"
+        assert call_args["json"]["app_name"] == "KEY-ID-main"
+        assert len(call_args["json"]["keys"]) == 2
+        assert profile.id == "cp-1"
+        assert profile.aid == "F0394148000001"
+        assert len(profile.keys) == 2
+
+
+class TestUpdateTemplateKeywordArg:
+    @patch("requests.request")
+    def test_update_template_with_keyword_arg(
+        self, mock_request, client, mock_response
+    ):
+        mock_request.return_value = mock_response
+
+        client.console.update_template(card_template_id="0xd3adb00b5", name="New Name")
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "PUT"
+        assert (
+            call_args["url"]
+            == f"{client.base_url}/v1/console/card-templates/0xd3adb00b5"
+        )
+        assert call_args["json"]["name"] == "New Name"
+
+    @patch("requests.request")
+    def test_read_template_with_keyword_arg(self, mock_request, client, mock_response):
+        mock_request.return_value = mock_response
+
+        client.console.read_template(card_template_id="0xd3adb00b5")
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "GET"
+        assert (
+            call_args["url"]
+            == f"{client.base_url}/v1/console/card-templates/0xd3adb00b5"
+        )
+
+
+class TestHIDOrgsListBackwardCompat:
+    @patch("requests.request")
+    def test_list_orgs_handles_wrapped_response(self, mock_request, client):
+        """If the API ever wraps the response in {"orgs": [...]}, it still works."""
+        mock_resp = Mock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "orgs": [
+                {"id": "org-1", "name": "Acme Corp", "status": "active"},
+            ]
+        }
+        mock_request.return_value = mock_resp
+
+        orgs = client.console.hid.orgs.list()
+
+        assert len(orgs) == 1
+        assert orgs[0].id == "org-1"
+
+
+class TestAccessCardFieldDefaults:
+    def test_missing_fields_default_to_none(self):
+        from accessgrid.client import AccessCard
+
+        card = AccessCard(None, {"id": "card-1", "state": "active"})
+
+        assert card.organization_name is None
+        assert card.temporary is None
+        assert card.employee_id is None
+        assert card.created_at is None
+        assert card.metadata == {}
+
+    def test_template_missing_metadata_defaults_to_empty(self):
+        from accessgrid.client import Template
+
+        tmpl = Template(None, {"id": "t-1", "name": "Test"})
+
+        assert tmpl.metadata == {}
