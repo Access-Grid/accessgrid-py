@@ -128,6 +128,7 @@ class TemplateInfo:
         self._client = client
         self._data = data
         self.id = data.get("id")
+        self.ex_id = data.get("ex_id")
         self.name = data.get("name")
         self.platform = data.get("platform")
 
@@ -152,6 +153,7 @@ class PassTemplatePair:
         self._client = client
         self._data = data
         self.id = data.get("id")
+        self.ex_id = data.get("ex_id")
         self.name = data.get("name")
         self.created_at = data.get("created_at")
         self.android_template = (
@@ -593,6 +595,9 @@ class Console:
         """
         List Pass Template Pairs with pagination support.
 
+        The upstream JSON key is ``card_template_pairs``; we remap it to
+        ``pass_template_pairs`` in the returned dict for backward compatibility.
+
         Args:
             page: Page number for pagination (default: 1)
             per_page: Number of results per page (default: 50, max: 100)
@@ -600,15 +605,43 @@ class Console:
         Returns:
             Dict containing pass_template_pairs list and pagination info
         """
-        response = self._client._get("/v1/console/pass-template-pairs", params=kwargs)
+        response = self._client._get("/v1/console/card-template-pairs", params=kwargs)
 
-        if "pass_template_pairs" in response:
+        if "card_template_pairs" in response:
             response["pass_template_pairs"] = [
                 PassTemplatePair(self._client, pair)
-                for pair in response["pass_template_pairs"]
+                for pair in response["card_template_pairs"]
             ]
+            del response["card_template_pairs"]
 
         return response
+
+    def create_pass_template_pair(
+        self,
+        name: str,
+        apple_card_template_id: str,
+        google_card_template_id: str,
+    ) -> PassTemplatePair:
+        """
+        Create a Pass Template Pair linking an Apple (iOS) and Google (Android)
+        card template. Both templates must be published (status: ready) and use
+        the same protocol.
+
+        Args:
+            name: Name of the pair
+            apple_card_template_id: ex_id of the Apple (iOS) card template
+            google_card_template_id: ex_id of the Google (Android) card template
+
+        Returns:
+            The newly created PassTemplatePair
+        """
+        payload = {
+            "name": name,
+            "apple_card_template_id": apple_card_template_id,
+            "google_card_template_id": google_card_template_id,
+        }
+        response = self._client._post("/v1/console/card-template-pairs", payload)
+        return PassTemplatePair(self._client, response)
 
 
 class AccessGrid:

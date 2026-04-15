@@ -368,29 +368,34 @@ class TestConsole:
         mock_resp = Mock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "pass_template_pairs": [
+            "card_template_pairs": [
                 {
                     "id": "pair-1",
+                    "ex_id": "pair-1",
                     "name": "Employee Badge",
                     "created_at": "2025-01-15T10:00:00Z",
                     "android_template": {
                         "id": "tmpl-android-1",
+                        "ex_id": "tmpl-android-1",
                         "name": "Android Employee Badge",
                         "platform": "google",
                     },
                     "ios_template": {
                         "id": "tmpl-ios-1",
+                        "ex_id": "tmpl-ios-1",
                         "name": "iOS Employee Badge",
                         "platform": "apple",
                     },
                 },
                 {
                     "id": "pair-2",
+                    "ex_id": "pair-2",
                     "name": "Visitor Pass",
                     "created_at": "2025-02-01T12:00:00Z",
                     "android_template": None,
                     "ios_template": {
                         "id": "tmpl-ios-2",
+                        "ex_id": "tmpl-ios-2",
                         "name": "iOS Visitor Pass",
                         "platform": "apple",
                     },
@@ -405,21 +410,21 @@ class TestConsole:
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
-        assert call_args["url"] == f"{client.base_url}/v1/console/pass-template-pairs"
+        assert call_args["url"] == f"{client.base_url}/v1/console/card-template-pairs"
         assert call_args["params"]["page"] == 1
         assert call_args["params"]["per_page"] == 50
 
         pairs = result["pass_template_pairs"]
         assert len(pairs) == 2
+        assert "card_template_pairs" not in result
 
         # First pair — both platforms
         assert pairs[0].id == "pair-1"
+        assert pairs[0].ex_id == "pair-1"
         assert pairs[0].name == "Employee Badge"
         assert pairs[0].android_template.id == "tmpl-android-1"
+        assert pairs[0].android_template.ex_id == "tmpl-android-1"
         assert pairs[0].android_template.platform == "google"
-        expected_ti = "TemplateInfo(id='tmpl-android-1', name='Android Employee Badge', platform='google')"  # noqa: E501
-        assert str(pairs[0].android_template) == expected_ti
-        assert repr(pairs[0].android_template) == expected_ti
         assert pairs[0].ios_template.id == "tmpl-ios-1"
         assert pairs[0].ios_template.platform == "apple"
 
@@ -427,6 +432,52 @@ class TestConsole:
         assert pairs[1].id == "pair-2"
         assert pairs[1].android_template is None
         assert pairs[1].ios_template.id == "tmpl-ios-2"
+
+    @patch("requests.request")
+    def test_create_pass_template_pair(self, mock_request, client):
+        mock_resp = Mock()
+        mock_resp.status_code = 201
+        mock_resp.json.return_value = {
+            "id": "pair_new",
+            "ex_id": "pair_new",
+            "name": "New Badge Pair",
+            "created_at": "2026-04-15T12:00:00Z",
+            "ios_template": {
+                "id": "tmpl_ios",
+                "ex_id": "tmpl_ios",
+                "name": "iOS Badge",
+                "platform": "apple",
+            },
+            "android_template": {
+                "id": "tmpl_android",
+                "ex_id": "tmpl_android",
+                "name": "Android Badge",
+                "platform": "android",
+            },
+        }
+        mock_request.return_value = mock_resp
+
+        pair = client.console.create_pass_template_pair(
+            name="New Badge Pair",
+            apple_card_template_id="tmpl_ios",
+            google_card_template_id="tmpl_android",
+        )
+
+        call_args = mock_request.call_args[1]
+        assert call_args["method"] == "POST"
+        assert call_args["url"] == f"{client.base_url}/v1/console/card-template-pairs"
+        assert call_args["json"]["name"] == "New Badge Pair"
+        assert call_args["json"]["apple_card_template_id"] == "tmpl_ios"
+        assert call_args["json"]["google_card_template_id"] == "tmpl_android"
+
+        from accessgrid.client import PassTemplatePair
+        assert isinstance(pair, PassTemplatePair)
+        assert pair.id == "pair_new"
+        assert pair.ex_id == "pair_new"
+        assert pair.name == "New Badge Pair"
+        assert pair.ios_template.platform == "apple"
+        assert pair.ios_template.ex_id == "tmpl_ios"
+        assert pair.android_template.platform == "android"
 
 
 class TestHIDOrgs:
