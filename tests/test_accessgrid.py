@@ -516,17 +516,19 @@ class TestHIDOrgs:
 
 class TestConsoleLogs:
     @patch("requests.request")
-    def test_get_logs(self, mock_request, client, mock_response):
+    def test_get_logs_expands_nested_filters(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
         template_id = "0xd3adb00b5"
-        filters = {
-            "device": "mobile",
-            "start_date": "2025-01-01T00:00:00Z",
-            "end_date": "2025-02-01T00:00:00Z",
-            "event_type": "install",
-        }
 
-        client.console.get_logs(template_id, **filters)
+        client.console.get_logs(
+            template_id,
+            filters={
+                "device": "mobile",
+                "start_date": "2025-01-01T00:00:00Z",
+                "end_date": "2025-02-01T00:00:00Z",
+                "event_type": "install",
+            },
+        )
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
@@ -534,17 +536,48 @@ class TestConsoleLogs:
             call_args["url"]
             == f"{client.base_url}/v1/console/card-templates/{template_id}/logs"
         )
-        assert call_args["params"]["device"] == "mobile"
-        assert call_args["params"]["start_date"] == "2025-01-01T00:00:00Z"
-        assert call_args["params"]["end_date"] == "2025-02-01T00:00:00Z"
-        assert call_args["params"]["event_type"] == "install"
+        # Rails expects filters[key]=value style
+        assert call_args["params"]["filters[device]"] == "mobile"
+        assert call_args["params"]["filters[start_date]"] == "2025-01-01T00:00:00Z"
+        assert call_args["params"]["filters[end_date]"] == "2025-02-01T00:00:00Z"
+        assert call_args["params"]["filters[event_type]"] == "install"
+        # The raw nested dict should not leak through as a single param
+        assert "filters" not in call_args["params"]
+
+    @patch("requests.request")
+    def test_get_logs_passes_top_level_params_through(
+        self, mock_request, client, mock_response
+    ):
+        mock_request.return_value = mock_response
+
+        client.console.get_logs("tmpl-1", page=2, per_page=25)
+
+        params = mock_request.call_args[1]["params"]
+        assert params["page"] == 2
+        assert params["per_page"] == 25
+
+    @patch("requests.request")
+    def test_get_logs_skips_none_filter_values(
+        self, mock_request, client, mock_response
+    ):
+        mock_request.return_value = mock_response
+
+        client.console.get_logs(
+            "tmpl-1", filters={"device": "mobile", "event_type": None}
+        )
+
+        params = mock_request.call_args[1]["params"]
+        assert params["filters[device]"] == "mobile"
+        assert "filters[event_type]" not in params
 
     @patch("requests.request")
     def test_event_log_alias(self, mock_request, client, mock_response):
         mock_request.return_value = mock_response
         template_id = "0xd3adb00b5"
 
-        client.console.event_log(card_template_id=template_id, device="mobile")
+        client.console.event_log(
+            card_template_id=template_id, filters={"device": "mobile"}
+        )
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
@@ -552,7 +585,7 @@ class TestConsoleLogs:
             call_args["url"]
             == f"{client.base_url}/v1/console/card-templates/{template_id}/logs"
         )
-        assert call_args["params"]["device"] == "mobile"
+        assert call_args["params"]["filters[device]"] == "mobile"
 
 
 class TestIosPreflight:
