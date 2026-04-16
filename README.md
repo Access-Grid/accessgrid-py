@@ -29,7 +29,8 @@ client = AccessGrid(account_id, secret_key)
 card = client.access_cards.provision(
     card_template_id="0xd3adb00b5",
     employee_id="123456789",
-    tag_id="DDEADB33FB00B5",
+    card_number="123456",
+    site_code="100",
     full_name="Employee name",
     email="employee@yourwebsite.com",
     phone_number="+19547212241",
@@ -107,7 +108,7 @@ client.access_cards.delete(card_id="0xc4rd1d")
 template = client.console.create_template(
     name="Employee Access Pass",
     platform="apple",
-    use_case="employee_badge",
+    use_case="corporate_id",
     protocol="desfire",
     allow_on_multiple_devices=True,
     watch_count=2,
@@ -201,6 +202,36 @@ for item in result['ledger_items']:
         print(f"  Access Pass: {item['access_pass']['ex_id']}")
         if item['access_pass'].get('pass_template'):
             print(f"  Card Template: {item['access_pass']['pass_template']['ex_id']}")
+```
+
+### Card Template Pairs
+
+#### Create a card template pair
+
+Both templates must be published (status: `ready`) and unpaired. Valid protocol
+combinations are both SEOS, or Apple DESFire with Google Smart Tap.
+
+```python
+pair = client.console.create_pass_template_pair(
+    name="Employee Badge Pair",
+    apple_card_template_id="0xapplet3mp14t3",
+    google_card_template_id="0xgoogl3t3mp14t3"
+)
+
+print(f"Created pair: {pair.name} (ID: {pair.id})")
+```
+
+#### List card template pairs
+
+```python
+result = client.console.list_pass_template_pairs(page=1, per_page=50)
+
+for pair in result['card_template_pairs']:
+    print(f"{pair.name} (ID: {pair.id})")
+    if pair.ios_template:
+        print(f"  iOS: {pair.ios_template.id}")
+    if pair.android_template:
+        print(f"  Android: {pair.android_template.id}")
 ```
 
 ### Landing Pages
