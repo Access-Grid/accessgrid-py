@@ -503,9 +503,23 @@ class Console:
         return Template(self._client, response)
 
     def get_logs(self, template_id: str, **kwargs) -> Dict[str, Any]:
-        """Get event logs for a card template"""
+        """Get event logs for a card template.
+
+        Supports a nested ``filters`` dict which is expanded into Rails-style
+        bracket params (e.g. ``filters[device]=mobile``). The controller reads
+        params[:filters][:device] etc., so the nested dict must be flattened
+        before it reaches the wire.
+        """
+        params: Dict[str, Any] = {}
+        for key, value in kwargs.items():
+            if key == "filters" and isinstance(value, dict):
+                for fk, fv in value.items():
+                    if fv is not None:
+                        params[f"filters[{fk}]"] = fv
+            else:
+                params[key] = value
         return self._client._get(
-            f"/v1/console/card-templates/{template_id}/logs", params=kwargs
+            f"/v1/console/card-templates/{template_id}/logs", params=params
         )
 
     def event_log(self, card_template_id: str, **kwargs) -> Dict[str, Any]:
