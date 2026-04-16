@@ -204,9 +204,9 @@ for item in result['ledger_items']:
             print(f"  Card Template: {item['access_pass']['pass_template']['ex_id']}")
 ```
 
-### Pass Template Pairs
+### Card Template Pairs
 
-#### Create a pass template pair
+#### Create a card template pair
 
 Both templates must be published (status: `ready`) and unpaired. Valid protocol
 combinations are both SEOS, or Apple DESFire with Google Smart Tap.
@@ -221,7 +221,7 @@ pair = client.console.create_pass_template_pair(
 print(f"Created pair: {pair.name} (ID: {pair.id})")
 ```
 
-#### List pass template pairs
+#### List card template pairs
 
 ```python
 result = client.console.list_pass_template_pairs(page=1, per_page=50)
