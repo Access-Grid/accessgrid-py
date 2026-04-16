@@ -107,6 +107,9 @@ site/
 .pyre/
 .pytype/
 
+# Test scripts
+scripts/
+
 # Distribution / packaging
 .Python
 *.pyc

@@ -368,7 +368,7 @@ class TestConsole:
         mock_resp = Mock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
-            "pass_template_pairs": [
+            "card_template_pairs": [
                 {
                     "id": "pair-1",
                     "name": "Employee Badge",
@@ -405,11 +405,11 @@ class TestConsole:
 
         call_args = mock_request.call_args[1]
         assert call_args["method"] == "GET"
-        assert call_args["url"] == f"{client.base_url}/v1/console/pass-template-pairs"
+        assert call_args["url"] == f"{client.base_url}/v1/console/card-template-pairs"
         assert call_args["params"]["page"] == 1
         assert call_args["params"]["per_page"] == 50
 
-        pairs = result["pass_template_pairs"]
+        pairs = result["card_template_pairs"]
         assert len(pairs) == 2
 
         # First pair — both platforms
