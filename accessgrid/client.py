@@ -600,15 +600,31 @@ class Console:
         Returns:
             Dict containing pass_template_pairs list and pagination info
         """
-        response = self._client._get("/v1/console/pass-template-pairs", params=kwargs)
+        response = self._client._get("/v1/console/card-template-pairs", params=kwargs)
 
-        if "pass_template_pairs" in response:
-            response["pass_template_pairs"] = [
+        if "card_template_pairs" in response:
+            response["card_template_pairs"] = [
                 PassTemplatePair(self._client, pair)
-                for pair in response["pass_template_pairs"]
+                for pair in response["card_template_pairs"]
             ]
 
         return response
+
+    def create_pass_template_pair(self, **kwargs) -> PassTemplatePair:
+        """
+        Create a new pass template pair linking an Apple (iOS)
+        and Google (Android) card template.
+
+        Args:
+            name: Name for the pair
+            apple_card_template_id: Apple card template ID
+            google_card_template_id: Google card template ID
+
+        Returns:
+            PassTemplatePair object
+        """
+        response = self._client._post("/v1/console/card-template-pairs", kwargs)
+        return PassTemplatePair(self._client, response)
 
 
 class AccessGrid:
