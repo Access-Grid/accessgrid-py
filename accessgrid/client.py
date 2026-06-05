@@ -26,6 +26,43 @@ class AuthenticationError(AccessGridError):
     pass
 
 
+class InvalidEnvelopeError(AccessGridError):
+    """Raised when a SmartTap reveal envelope is missing required fields,
+    contains non-base64 / non-PEM data, or otherwise can't be parsed."""
+
+    pass
+
+
+class DecryptError(AccessGridError):
+    """Raised when AES-GCM auth-tag verification fails while decrypting a
+    SmartTap reveal envelope (wrong key, tampered envelope, or wire-format
+    drift between server and SDK)."""
+
+    pass
+
+
+class PublishTemplateResponse:
+    """Result of publishing a card template."""
+
+    def __init__(self, data):
+        self.id = data.get("id")
+        self.status = data.get("status")
+
+
+class RevealTemplatePrivateKey:
+    """Result of a SmartTap private key reveal.
+
+    ``private_key`` is the plaintext PEM, decrypted client-side by the SDK.
+    The encrypted envelope is consumed internally and not exposed.
+    """
+
+    def __init__(self, data):
+        self.key_version = data.get("key_version")
+        self.collector_id = data.get("collector_id")
+        self.fingerprint = data.get("fingerprint")
+        self.private_key = data.get("private_key")
+
+
 class AccessCard:
     def __init__(self, client, data: Dict[str, Any]):
         self._client = client
@@ -502,6 +539,38 @@ class Console:
             return [Template(self._client, item) for item in response["templates"]]
         return Template(self._client, response)
 
+    def publish_template(self, card_template_id: str) -> PublishTemplateResponse:
+        """Publish a card template.
+
+        For Apple templates this transitions to ``in-review``; for Android
+        (Google) templates it becomes ``ready`` immediately.
+        """
+        response = self._client._post(
+            f"/v1/console/card-templates/{card_template_id}/publish", {}
+        )
+        return PublishTemplateResponse(response)
+
+    def reveal_smart_tap(self, card_template_id: str) -> RevealTemplatePrivateKey:
+        """Reveal the SmartTap private key for a card template, decrypted client-side.
+
+        The SDK generates a fresh ephemeral P-256 keypair per call, submits the
+        public half, and decrypts the server's response. The returned
+        ``RevealTemplatePrivateKey`` carries the plaintext PEM in
+        ``.private_key``; the encrypted envelope is consumed internally and not
+        exposed.
+        """
+        from .smart_tap_reveal_crypto import decrypt_envelope, generate_keypair
+
+        keypair = generate_keypair()
+        response = self._client._post(
+            f"/v1/console/card-templates/{card_template_id}/smart-tap/reveal",
+            {"client_public_key": keypair["public_key_pem"]},
+        )
+        plaintext = decrypt_envelope(
+            response.get("encrypted_private_key"), keypair["private_key"]
+        )
+        return RevealTemplatePrivateKey({**response, "private_key": plaintext})
+
     def get_logs(self, template_id: str, **kwargs) -> Dict[str, Any]:
         """Get event logs for a card template.
 
@@ -703,7 +772,7 @@ class AccessGrid:
             if len(parts) >= 2:
                 # For actions like unlink/suspend/resume,
                 # get the card ID (second to last part)
-                if parts[-1] in ["suspend", "resume", "unlink", "delete"]:
+                if parts[-1] in ["suspend", "resume", "unlink", "delete", "publish"]:
                     resource_id = parts[-2]
                 else:
                     # Otherwise, the ID is typically the last part of the path

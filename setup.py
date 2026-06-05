@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="accessgrid",
-    version="0.4.0",
+    version="0.5.0",
     author="Auston Bunsen",
     author_email="ab@accessgrid.com",
     description="Python SDK for the AccessGrid API",
@@ -29,6 +29,7 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "requests>=2.25.0",
+        "cryptography>=41.0.0",
     ],
     extras_require={
         "dev": [

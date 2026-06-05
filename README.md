@@ -151,6 +151,31 @@ template = client.console.update_template(
 template = client.console.read_template(card_template_id="0xd3adb00b5")
 ```
 
+#### Publish a template
+
+```python
+result = client.console.publish_template(card_template_id="0xd3adb00b5")
+
+print(f"Template {result.id} status: {result.status}")
+# status is one of: "publishing" (already in flight), "in-review" (Apple
+# queued), or "ready" (Android immediate)
+```
+
+#### Reveal a SmartTap private key
+
+Fetches the template's SmartTap private key, decrypted client-side. The SDK generates a fresh ephemeral P-256 keypair per call, submits the public half, and decrypts the server's response — you get the plaintext PEM back without touching any crypto.
+
+```python
+reveal = client.console.reveal_smart_tap(card_template_id="0xd3adb00b5")
+
+print(f"Key version:  {reveal.key_version}")
+print(f"Collector ID: {reveal.collector_id}")
+print(f"Fingerprint:  {reveal.fingerprint}")
+print(reveal.private_key)  # PEM — store in your reader/collector key vault
+```
+
+The server enforces single-use on pubkey fingerprint and rate-limits to 1 per minute per account. The SDK uses a fresh keypair every call, so single-use is satisfied automatically.
+
 #### Get event logs
 
 ```python
@@ -441,6 +466,8 @@ MIT License - See LICENSE file for details.
 | POST /v1/console/card-templates | `console.create_template()` | Y |
 | PUT /v1/console/card-templates/{id} | `console.update_template()` | Y |
 | GET /v1/console/card-templates/{id} | `console.read_template()` | Y |
+| POST /v1/console/card-templates/{id}/publish | `console.publish_template()` | Y |
+| POST /v1/console/card-templates/{id}/smart-tap/reveal | `console.reveal_smart_tap()` | Y |
 | GET /v1/console/card-templates/{id}/logs | `console.get_logs()` / `console.event_log()` | Y |
 | GET /v1/console/card-template-pairs | `console.list_pass_template_pairs()` | Y |
 | POST /v1/console/card-template-pairs | `console.create_pass_template_pair()` | Y |

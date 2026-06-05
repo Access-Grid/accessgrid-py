@@ -24,10 +24,14 @@ from .client import (
     AccessGridError,
     AuthenticationError,
     CredentialProfile,
+    DecryptError,
+    InvalidEnvelopeError,
     IosPreflight,
     LandingPage,
     Org,
     PassTemplatePair,
+    PublishTemplateResponse,
+    RevealTemplatePrivateKey,
     Template,
     TemplateInfo,
     UnifiedAccessPass,
@@ -35,13 +39,15 @@ from .client import (
 )
 
 # Version of the accessgrid package
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 # List of public objects that will be exported with "from accessgrid import *"
 __all__ = [
     "AccessGrid",
     "AccessGridError",
     "AuthenticationError",
+    "DecryptError",
+    "InvalidEnvelopeError",
     "AccessCard",
     "UnifiedAccessPass",
     "Template",
@@ -52,4 +58,6 @@ __all__ = [
     "Org",
     "LandingPage",
     "CredentialProfile",
+    "PublishTemplateResponse",
+    "RevealTemplatePrivateKey",
 ]
